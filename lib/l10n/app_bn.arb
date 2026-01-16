@@ -1,0 +1,31 @@
+{
+  "@@locale": "bn",
+  "appTitle": "পাইকারি.শপ",
+  "wholesalePrice": "পাইকারি মূল্য",
+  "retailPrice": "খুচরা মূল্য",
+  "addToCart": "কার্টে যোগ করুন",
+  "cart": "কার্ট",
+  "emptyCart": "আপনার কার্ট খালি আছে",
+  "subtotal": "সাবটোটাল",
+  "checkout": "চেকআউট",
+  "shippingAddress": "শিপিং ঠিকানা",
+  "district": "জেলা",
+  "thana": "থানা/উপজেলা",
+  "phone": "ফোন নম্বর",
+  "paymentMethod": "পেমেন্ট পদ্ধতি",
+  "placeOrder": "অর্ডার সম্পন্ন করুন",
+  "cashOnDelivery": "ক্যাশ অন ডেলিভারি",
+  "profile": "প্রোফাইল",
+  "myOrders": "আমার অর্ডারসমূহ",
+  "orderDate": "অর্ডারের তারিখ",
+  "status": "অবস্থা",
+  "wholesaleTiers": "পাইকারি ধাপসমূহ",
+  "minQuantity": "সর্বনিম্ন পরিমাণ: {quantity}",
+  "@minQuantity": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "848463368438",
+    "project_id": "paikarishop-b4da6",
+    "storage_bucket": "paikarishop-b4da6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848463368438:android:77247d7289824529441cd7",
+        "android_client_info": {
+          "package_name": "com.example.paikari_shop"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "848463368438-nfojq331rvdomrc8n4gp2h8ju5ropghh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.paikari_shop",
+            "certificate_hash": "0766e8ee5419d4975bc98397484fabcdd5f1c863"
+          }
+        },
+        {
+          "client_id": "848463368438-fpev1bk80h6tdepehefjlqo92rgphq59.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7n3-NshGDSRwbTTrtthhYs7C3RxWfr80"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "848463368438-fpev1bk80h6tdepehefjlqo92rgphq59.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "848463368438-uol57c27negponoovnf307sbg9hv42it.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.paikariShop"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

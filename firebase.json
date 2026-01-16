@@ -1,0 +1,23 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "paikarishop-b4da6",
+                    "appId": "1:848463368438:android:77247d7289824529441cd7",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "paikarishop-b4da6",
+                    "configurations": {
+                        "android": "1:848463368438:android:77247d7289824529441cd7",
+                        "ios": "1:848463368438:ios:d79f8cc16a7cc2fc441cd7",
+                        "web": "1:848463368438:web:693667e61a01ded9441cd7"
+                    }
+                }
+            }
+        }
+    }
+}

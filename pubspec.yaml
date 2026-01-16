@@ -1,0 +1,52 @@
+name: paikari_shop
+description: A marketplace app for the Bangladesh market (B2B & B2C).
+version: 1.0.0+1
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  google_fonts: ^6.2.0
+  intl: ^0.20.2
+  flutter_riverpod: ^2.6.1
+  riverpod: ^2.6.1
+  state_notifier: ^1.0.0
+  riverpod_annotation: ^2.3.5
+  firebase_core: ^4.3.0
+  firebase_auth: ^6.1.3
+  firebase_auth_platform_interface: ^8.1.5
+  cloud_firestore: ^6.1.1
+  json_annotation: ^4.9.0
+  freezed_annotation: ^3.1.0
+  shimmer: ^3.0.0
+  google_sign_in: ^6.2.2
+  firebase_storage: ^13.0.5
+  image_picker: ^1.1.2
+  file_picker: ^10.3.8
+  flutter_facebook_auth: ^7.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.9
+  # riverpod_generator temporarily removed to allow freezed/analyzer upgrades
+  # riverpod_generator: ^4.0.0
+  json_serializable: ^6.8.0
+  freezed: 3.2.3
+  # custom_lint temporarily removed to allow analyzer/dependency upgrades
+  # custom_lint: ^0.8.1
+  # riverpod_lint temporarily removed to allow analyzer/dependency upgrades
+  # riverpod_lint: ^3.1.0
+  firebase_auth_mocks: ^0.15.1
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/logo.jpg
+    - assets/fonts/
+    

@@ -1,0 +1,31 @@
+{
+  "@@locale": "en",
+  "appTitle": "Paikari.shop",
+  "wholesalePrice": "Wholesale Price",
+  "retailPrice": "Retail Price",
+  "addToCart": "Add to Cart",
+  "cart": "Cart",
+  "emptyCart": "Your cart is empty",
+  "subtotal": "Subtotal",
+  "checkout": "Checkout",
+  "shippingAddress": "Shipping Address",
+  "district": "District",
+  "thana": "Thana/Upazila",
+  "phone": "Phone Number",
+  "paymentMethod": "Payment Method",
+  "placeOrder": "Place Order",
+  "cashOnDelivery": "Cash on Delivery",
+  "profile": "Profile",
+  "myOrders": "My Orders",
+  "orderDate": "Order Date",
+  "status": "Status",
+  "wholesaleTiers": "Wholesale Tiers",
+  "minQuantity": "Min Quantity: {quantity}",
+  "@minQuantity": {
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      }
+    }
+  }
+}
