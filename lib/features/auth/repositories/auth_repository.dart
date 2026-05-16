@@ -1,14 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:paikari_shop/features/auth/models/user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final sb.SupabaseClient _supabase = sb.Supabase.instance.client;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
@@ -128,13 +128,19 @@ class AuthRepository {
     }
   }
 
-  // Helper to ensure user exists in Firestore after login
+  // Helper to ensure user exists in Supabase after login
   Future<void> ensureUserDocumentExists(User user, UserRole role) async {
     if (kDebugMode) {
       debugPrint('AuthRepository: ensureUserDocumentExists for ${user.uid}');
     }
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    if (!doc.exists) {
+    
+    final response = await _supabase
+        .from('users')
+        .select()
+        .eq('uid', user.uid)
+        .maybeSingle();
+
+    if (response == null) {
       final userModel = UserModel(
         uid: user.uid,
         email: user.email,
@@ -142,18 +148,14 @@ class AuthRepository {
         phoneNumber: user.phoneNumber,
         role: role,
       );
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .set(userModel.toJson());
+      await _supabase.from('users').insert(userModel.toJson());
     }
   }
 
   Future<void> updateUserData(UserModel user) async {
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .set(user.toJson(), SetOptions(merge: true));
+    await _supabase
+        .from('users')
+        .upsert(user.toJson(), onConflict: 'uid');
   }
 
   Future<void> signOut() {
@@ -161,12 +163,16 @@ class AuthRepository {
   }
 
   Stream<UserModel?> getUserModel(String uid) {
-    return _firestore.collection('users').doc(uid).snapshots().map((snapshot) {
-      if (snapshot.exists && snapshot.data() != null) {
-        return UserModel.fromJson(snapshot.data()!);
-      }
-      return null;
-    });
+    return _supabase
+        .from('users')
+        .stream(primaryKey: ['uid'])
+        .eq('uid', uid)
+        .map((data) {
+          if (data.isNotEmpty) {
+            return UserModel.fromJson(data.first);
+          }
+          return null;
+        });
   }
 }
 
