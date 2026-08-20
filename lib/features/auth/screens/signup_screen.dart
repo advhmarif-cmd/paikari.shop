@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:image_picker/image_picker.dart';
 import 'package:paikari_shop/core/repositories/storage_repository.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
@@ -37,7 +37,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _handleSignup() async {
-    final user = auth.FirebaseAuth.instance.currentUser;
+    final user = sb.Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
     if (_nameController.text.isEmpty) {
@@ -62,16 +62,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         final bytes = await _tradeLicenseFile!.readAsBytes();
         tradeLicenseUrl = await ref.read(storageRepositoryProvider).uploadFile(
               path: 'trade_licenses',
-              id: user.uid,
+              id: user.id,
               fileBytes: bytes,
             );
       }
 
       final userModel = UserModel(
-        uid: user.uid,
+        uid: user.id,
         email: user.email,
         displayName: _nameController.text.trim(),
-        phoneNumber: user.phoneNumber,
+        phoneNumber: user.phone,
         role: _selectedRole,
         businessName: _selectedRole == UserRole.vendor
             ? _businessController.text.trim()

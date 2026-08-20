@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:paikari_shop/firebase_options.dart';
 import 'package:paikari_shop/core/config/supabase_config.dart';
+import 'package:paikari_shop/firebase_options.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/auth/screens/login_screen.dart';
 import 'package:paikari_shop/features/auth/screens/signup_screen.dart';
@@ -19,7 +18,6 @@ import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 import 'package:paikari_shop/features/cart/screens/cart_screen.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
 import 'package:paikari_shop/core/widgets/shimmer_loading.dart';
-import 'package:paikari_shop/core/debug/firebase_debug_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,8 +25,10 @@ Future<void> main() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
+    authFlowType: AuthFlowType.pkce,
   );
 
+  // Firestore still backs the existing order repository in this staged migration.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -63,8 +63,6 @@ class PaikariApp extends StatelessWidget {
         '/cart': (context) => const CartScreen(),
         '/checkout': (context) => const CheckoutScreen(),
         '/profile': (context) => const ProfileScreen(),
-        if (kDebugMode)
-          '/debug-firebase': (context) => const FirebaseDebugPage(),
       },
     );
   }

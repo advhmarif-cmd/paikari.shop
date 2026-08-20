@@ -1,10 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
-import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
-import 'package:paikari_shop/features/auth/models/user_model.dart';
 import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 
@@ -20,24 +17,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _otpController = TextEditingController();
 
   bool _isLoading = false;
-  String? _verificationId;
-  dynamic _confirmationResult;
-  RecaptchaVerifier? _recaptchaVerifier;
-
-  @override
-  void initState() {
-    super.initState();
-    if (kIsWeb) {
-      _recaptchaVerifier = RecaptchaVerifier(
-        auth: FirebaseAuthPlatform.instance,
-        container: 'recaptcha-container',
-        size: RecaptchaVerifierSize.normal,
-        onSuccess: () => debugPrint('reCAPTCHA verified'),
-        onError: (error) => debugPrint('reCAPTCHA error: $error'),
-        onExpired: () => debugPrint('reCAPTCHA expired'),
-      );
-    }
-  }
+  bool _otpSent = false;
+  String? _phoneNumber;
 
   String _normalizePhoneNumber(String input) {
     const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
@@ -46,14 +27,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     for (int i = 0; i < 10; i++) {
       normalized = normalized.replaceAll(banglaDigits[i], englishDigits[i]);
     }
-    return normalized.replaceAll(RegExp(r'\D'), '');
+    normalized = normalized.replaceAll(RegExp(r'\D'), '');
+    if (normalized.startsWith('880')) return '+$normalized';
+    if (normalized.startsWith('0')) return '+88${normalized.substring(1)}';
+    return '+88$normalized';
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _otpController.dispose();
-    _recaptchaVerifier?.clear();
     super.dispose();
   }
 
@@ -61,8 +44,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final rawPhone = _phoneController.text.trim();
     if (rawPhone.isEmpty) return;
 
-    final normalized = _normalizePhoneNumber(rawPhone);
-    if (normalized.length < 10) {
+    final phoneNumber = _normalizePhoneNumber(rawPhone);
+    final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 12) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('সঠিক মোবাইল নম্বর দিন')),
       );
@@ -70,74 +54,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
-    debugPrint('OTP: Starting verification for +88$normalized');
-
     try {
-      final result = await ref.read(authRepositoryProvider).verifyPhoneNumber(
-            phoneNumber: '+88$normalized',
-            onCodeSent: (verificationId) {
-              debugPrint('OTP: Code sent. Verification ID: $verificationId');
-              if (mounted) {
-                setState(() {
-                  _verificationId = verificationId;
-                  _isLoading = false;
-                });
-              }
-            },
-            onVerificationFailed: (e) {
-              debugPrint('OTP: Verification failed: ${e.message}');
-              if (mounted) {
-                setState(() => _isLoading = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: ${e.message}')),
-                );
-              }
-            },
-            verifier: _recaptchaVerifier,
+      await ref.read(authRepositoryProvider).sendPhoneOtp(
+            phoneNumber: phoneNumber,
           );
-
-      if (result != null) {
-        debugPrint('OTP: Web confirmation result received');
-        if (mounted) {
-          setState(() {
-            _confirmationResult = result;
-            _verificationId = "web-auth"; // Placeholder
-            _isLoading = false;
-          });
-        }
-      } else if (!kIsWeb) {
-        // On mobile, if verifyPhoneNumber returns null but codeSent hasn't fired yet,
-        // we keep loading. But we should add a timeout or check if codeSent took too long.
-        debugPrint('OTP: Mobile verification initiated (waiting for callback)');
+      if (mounted) {
+        setState(() {
+          _phoneNumber = phoneNumber;
+          _otpSent = true;
+        });
       }
     } catch (e) {
-      debugPrint('OTP: Catch error: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('অনুরোধ ব্যর্থ হয়েছে: $e')),
+          SnackBar(content: Text('OTP পাঠানো যায়নি: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _verifyOtp() async {
-    if (_otpController.text.isEmpty) return;
+    if (_otpController.text.trim().isEmpty || _phoneNumber == null) return;
     setState(() => _isLoading = true);
     try {
-      final userCredential =
-          await ref.read(authRepositoryProvider).signInWithOtp(
-                verificationId: _verificationId ?? "",
-                smsCode: _otpController.text.trim(),
-                confirmationResult: _confirmationResult,
-              );
-
-      // Ensure user document exists in Firestore
-      if (userCredential.user != null) {
-        await ref.read(authRepositoryProvider).ensureUserDocumentExists(
-              userCredential.user!,
-              UserRole.consumer, // Default role for phone auth
-            );
+      final response = await ref.read(authRepositoryProvider).verifyPhoneOtp(
+            phoneNumber: _phoneNumber!,
+            token: _otpController.text.trim(),
+          );
+      final user = response.user;
+      if (user != null) {
+        await ref.read(authRepositoryProvider).ensureUserProfileExists(user);
       }
     } catch (e) {
       if (mounted) {
@@ -150,18 +98,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _handleSocialLogin(
-      Future<UserCredential> Function() loginMethod) async {
+  Future<void> _handleSocialLogin(sb.OAuthProvider provider) async {
     setState(() => _isLoading = true);
     try {
-      final userCredential = await loginMethod();
-
-      // Ensure user document exists in Firestore
-      if (userCredential.user != null) {
-        await ref.read(authRepositoryProvider).ensureUserDocumentExists(
-              userCredential.user!,
-              UserRole.consumer, // Default role for social auth
-            );
+      final started = await ref
+          .read(authRepositoryProvider)
+          .signInWithOAuth(provider);
+      if (!started && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('লগইন শুরু করা যায়নি')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -221,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       children: [
-                        if (_verificationId == null) ...[
+                        if (!_otpSent) ...[
                           TextField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
@@ -278,7 +224,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           TextButton(
                             onPressed: () =>
-                                setState(() => _verificationId = null),
+                                setState(() {
+                                  _otpSent = false;
+                                  _phoneNumber = null;
+                                }),
                             child: const Text('নম্বর পরিবর্তন করুন'),
                           ),
                         ],
@@ -301,27 +250,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               label: 'Google',
                               color: Colors.red.shade600,
                               icon: Icons.g_mobiledata,
-                              onPressed: () => _handleSocialLogin(ref
-                                  .read(authRepositoryProvider)
-                                  .signInWithGoogle),
+                              onPressed: () => _handleSocialLogin(sb.OAuthProvider.google),
                             ),
                             _SocialButton(
                               label: 'Facebook',
                               color: Colors.blue.shade800,
                               icon: Icons.facebook,
-                              onPressed: () => _handleSocialLogin(ref
-                                  .read(authRepositoryProvider)
-                                  .signInWithFacebook),
+                              onPressed: () => _handleSocialLogin(sb.OAuthProvider.facebook),
                             ),
                           ],
                         ),
-                        // Hidden reCAPTCHA container for Web Phone Auth
-                        const SizedBox(
-                            height: 0,
-                            child: Divider(
-                              height: 0,
-                              color: Colors.transparent,
-                            )),
                       ],
                     ),
                   ),

@@ -1,165 +1,92 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import 'package:paikari_shop/core/config/supabase_config.dart';
 import 'package:paikari_shop/features/auth/models/user_model.dart';
 
 class AuthRepository {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final sb.SupabaseClient _supabase = sb.Supabase.instance.client;
+  AuthRepository({sb.SupabaseClient? client})
+      : _supabase = client ?? sb.Supabase.instance.client;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final sb.SupabaseClient _supabase;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  sb.GoTrueClient get _auth => _supabase.auth;
 
-  // Phone Auth Step 1: Send OTP (Cross-platform)
-  Future<dynamic> verifyPhoneNumber({
+  sb.User? get currentUser => _auth.currentUser;
+
+  Stream<sb.User?> get authStateChanges => _auth.onAuthStateChange
+      .map((state) => state.session?.user);
+
+  Future<sb.AuthResponse> sendPhoneOtp({required String phoneNumber}) async {
+    return _auth.signInWithOtp(phone: phoneNumber);
+  }
+
+  Future<sb.AuthResponse> verifyPhoneOtp({
     required String phoneNumber,
-    required Function(String) onCodeSent,
-    required Function(FirebaseAuthException) onVerificationFailed,
-    required dynamic verifier, // For Web: RecaptchaVerifier
+    required String token,
   }) async {
-    if (kIsWeb) {
-      // For Web, signInWithPhoneNumber is simpler and highly recommended
-      try {
-        if (kDebugMode) {
-          debugPrint(
-              'AuthRepository: verifyPhoneNumber (web) for $phoneNumber');
-        }
-        // Check if we are on web
-        return await _auth.signInWithPhoneNumber(phoneNumber, verifier);
-      } catch (e) {
-        throw Exception('OTP পাঠাতে সমস্যা হয়েছে: $e');
-      }
-    } else {
-      if (kDebugMode) {
-        debugPrint(
-            'AuthRepository: verifyPhoneNumber (mobile) for $phoneNumber');
-      }
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-        },
-        verificationFailed: onVerificationFailed,
-        codeSent: (String verificationId, int? resendToken) {
-          onCodeSent(verificationId);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
-      );
-      return null;
-    }
+    return _auth.verifyOTP(
+      phone: phoneNumber,
+      token: token,
+      type: sb.OtpType.sms,
+    );
   }
 
-  // Cross-platform OTP verify
-  Future<UserCredential> signInWithOtp({
-    required String verificationId,
-    required String smsCode,
-    ConfirmationResult? confirmationResult,
+  String? get _authRedirectUrl =>
+      kIsWeb ? null : SupabaseConfig.authRedirectUrl;
+
+  Future<bool> signInWithGoogle() async {
+    return _auth.signInWithOAuth(
+      sb.OAuthProvider.google,
+      redirectTo: _authRedirectUrl,
+    );
+  }
+
+  Future<bool> signInWithFacebook() async {
+    return _auth.signInWithOAuth(
+      sb.OAuthProvider.facebook,
+      redirectTo: _authRedirectUrl,
+    );
+  }
+
+  Future<void> signOut() => _auth.signOut();
+
+  Future<UserModel> ensureUserProfileExists(
+    sb.User user, {
+    UserRole defaultRole = UserRole.consumer,
   }) async {
-    if (confirmationResult != null) {
-      if (kDebugMode) {
-        debugPrint('AuthRepository: signInWithOtp using confirmationResult');
-      }
-      return await confirmationResult.confirm(smsCode);
-    }
-    PhoneAuthCredential credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-    if (kDebugMode) {
-      debugPrint('AuthRepository: signInWithOtp using PhoneAuthCredential');
-    }
-    return await _auth.signInWithCredential(credential);
-  }
-
-  Future<UserCredential> signInWithGoogle() async {
-    if (kDebugMode) debugPrint('AuthRepository: signInWithGoogle start');
-    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) throw Exception('Google Sign-In canceled');
-
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
-    final OAuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    return await _auth.signInWithCredential(credential);
-  }
-
-  Future<UserCredential> signInWithFacebook() async {
-    try {
-      if (kDebugMode) {
-        debugPrint('AuthRepository: signInWithFacebook start (kIsWeb=$kIsWeb)');
-      }
-      if (kIsWeb) {
-        // On Web, ensure we use the web-specific login call if needed,
-        // though flutter_facebook_auth handles most of it.
-        // We add extra logging to debug 'window.FB' issues.
-        debugPrint('FB: Starting web login...');
-      }
-
-      final LoginResult result = await FacebookAuth.instance.login(
-        permissions: ['email', 'public_profile'],
-      );
-
-      debugPrint('FB: Login status: ${result.status}');
-
-      if (result.status == LoginStatus.success) {
-        final AccessToken accessToken = result.accessToken!;
-        final OAuthCredential credential =
-            FacebookAuthProvider.credential(accessToken.tokenString);
-
-        if (kDebugMode) {
-          debugPrint(
-              'AuthRepository: signInWithFacebook success, signing in with credential');
-        }
-        return await _auth.signInWithCredential(credential);
-      } else {
-        throw Exception(
-            'Facebook Login Failed: ${result.status} - ${result.message}');
-      }
-    } catch (e) {
-      debugPrint('FB: Error during login: $e');
-      rethrow;
-    }
-  }
-
-  // Helper to ensure user exists in Supabase after login
-  Future<void> ensureUserDocumentExists(User user, UserRole role) async {
-    if (kDebugMode) {
-      debugPrint('AuthRepository: ensureUserDocumentExists for ${user.uid}');
-    }
-    
-    final response = await _supabase
+    final existing = await _supabase
         .from('users')
         .select()
-        .eq('uid', user.uid)
+        .eq('uid', user.id)
         .maybeSingle();
 
-    if (response == null) {
-      final userModel = UserModel(
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        phoneNumber: user.phoneNumber,
-        role: role,
-      );
-      await _supabase.from('users').insert(userModel.toJson());
+    if (existing != null) {
+      return UserModel.fromJson(existing);
     }
+
+    final metadata = user.userMetadata ?? <String, dynamic>{};
+    final displayName = metadata['full_name'] as String? ??
+        metadata['name'] as String? ??
+        user.email?.split('@').first;
+
+    final userModel = UserModel(
+      uid: user.id,
+      email: user.email,
+      displayName: displayName,
+      phoneNumber: user.phone,
+      role: defaultRole,
+    );
+
+    await _supabase.from('users').insert(userModel.toJson());
+    return userModel;
   }
 
   Future<void> updateUserData(UserModel user) async {
-    await _supabase
-        .from('users')
-        .upsert(user.toJson(), onConflict: 'uid');
-  }
-
-  Future<void> signOut() {
-    return _auth.signOut();
+    await _supabase.from('users').upsert(
+          user.toJson(),
+          onConflict: 'uid',
+        );
   }
 
   Stream<UserModel?> getUserModel(String uid) {
@@ -168,10 +95,8 @@ class AuthRepository {
         .stream(primaryKey: ['uid'])
         .eq('uid', uid)
         .map((data) {
-          if (data.isNotEmpty) {
-            return UserModel.fromJson(data.first);
-          }
-          return null;
+          if (data.isEmpty) return null;
+          return UserModel.fromJson(data.first);
         });
   }
 }
@@ -180,14 +105,12 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
 });
 
-final authStateProvider = StreamProvider<User?>((ref) {
+final authStateProvider = StreamProvider<sb.User?>((ref) {
   return ref.watch(authRepositoryProvider).authStateChanges;
 });
 
 final userProvider = StreamProvider<UserModel?>((ref) {
   final authState = ref.watch(authStateProvider).value;
-  if (authState != null) {
-    return ref.watch(authRepositoryProvider).getUserModel(authState.uid);
-  }
-  return Stream.value(null);
+  if (authState == null) return Stream.value(null);
+  return ref.watch(authRepositoryProvider).getUserModel(authState.id);
 });
