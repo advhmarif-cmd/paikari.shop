@@ -1,37 +1,32 @@
-# Paikari.shop Supabase Auth migration handoff
+# Paikari.shop Auth and order-security handoff
 
-## Status
+## Implementation status
 
-The Firebase Auth portion of Paikari.shop has been migrated locally to Supabase Auth on branch `chore/supabase-auth-migration` at commit `f81c681` (`Migrate app auth from Firebase to Supabase`). The working tree is clean.
+The migration is complete locally on branch `chore/supabase-auth-migration`. The branch contains three commits: `f81c681` for Firebase Auth to Supabase Auth, `28828e6` for server-authoritative order pricing, and `a7c6277` for removing the obsolete Firestore order repository. The working tree is clean.
 
-The branch could not be pushed to GitHub because the available Git transport token returns HTTP 403 for `advhmarif-cmd/paikari.shop.git`, even though the GitHub CLI reports repository viewer permission `ADMIN`. A binary patch is available at `/home/ubuntu/paikari-supabase-auth-migration.patch`.
+The Supabase migration `secure_orders_rpc` was applied successfully to the Paikari.shop project. Live verification confirms that `public.order_records` and `public.shipping_settings` exist with RLS enabled, the `order_records_select_own` policy restricts reads to `user_id = auth.uid()`, and the `place_order_from_cart` function exists.
 
-## Completed code changes
+## Completed changes
 
-The app now initializes Supabase Auth with PKCE and keeps Firebase Core initialization only for the existing Firestore order repository. The AuthRepository uses Supabase sessions, `onAuthStateChange`, phone OTP, Google OAuth, Facebook OAuth, Supabase user profiles, sign-out, and profile streams. The login screen no longer imports Firebase Auth, Firebase reCAPTCHA, Google Sign-In, or Facebook Auth SDKs. Signup reads the current Supabase user and writes the existing `users` profile model.
+Firebase Auth has been replaced by Supabase Auth for session state, Phone OTP, Google OAuth, optional Facebook OAuth, profile provisioning, signup, and route guards. Android and iOS use the `io.paikari.shop://login-callback/` deep-link scheme. Firebase Auth SDKs and provider dependencies were removed.
 
-The existing route guard still provides the same user experience: unauthenticated users see LoginScreen, authenticated users without a profile see SignupScreen, and users with a profile reach HomeScreen. The profile order provider now uses Supabase User IDs. Android and iOS have the `io.paikari.shop://login-callback/` OAuth deep-link scheme.
+Order persistence no longer uses Firestore. The checkout screen sends only product IDs, quantities, shipping address, delivery zone, and payment method to `place_order_from_cart`. The RPC reads the current product price and wholesale tiers from Supabase, validates product availability and quantity, calculates delivery and total values, and inserts the order under the authenticated user. The client-side cart total remains display-only and is not used as the trusted amount.
 
-Firebase Auth-specific dependencies were removed from `pubspec.yaml`: `firebase_auth`, `firebase_auth_platform_interface`, `google_sign_in`, `flutter_facebook_auth`, and `firebase_auth_mocks`. Firebase Core, Firestore, and Storage remain because the current app still uses Firestore for orders and Firebase Storage for trade-license uploads. The lockfile must be regenerated with `flutter pub get`.
+Order history now streams from `order_records` and is filtered by the current Supabase user ID. The former Firestore order repository and `cloud_firestore` dependency were removed. Firebase Core/Storage remain only for the existing trade-license upload path.
 
-A Supabase migration was added at `supabase/migrations/20260820102000_supabase_auth_users_rls.sql`. It enables RLS on `public.users`, creates own-profile select/insert/update policies for authenticated users, limits self-created roles to consumer/vendor, revokes anon table access, and grants the required authenticated table operations.
+## Verification and limitations
 
-## Verification
+Static checks pass for `git diff --check`, removal of Firestore order references, and removal of old Firebase Auth references. The live Supabase migration and RLS policy checks passed. Flutter/Dart are not installed in the sandbox, so `flutter pub get`, `flutter analyze`, and `flutter test` could not be run. The lockfile should be regenerated locally with `flutter pub get`.
 
-Static verification passed for `git diff --check`, no remaining Firebase Auth references in `lib`, `test`, or `pubspec.yaml`, and the committed branch has no uncommitted changes. XML validation could not run because `xmllint` is not installed. Flutter/Dart validation could not run because neither `flutter` nor `dart` is installed in the sandbox.
+The GitHub push was rejected by the available Git credential with HTTP 403, so the branch has not been pushed automatically. A complete patch is available at `/home/ubuntu/paikari-auth-and-order-hardening.patch`.
 
-## Required dashboard and local follow-up
+## Required follow-up
 
-The Paikari.shop Supabase project is currently `INACTIVE`. The attempted restore was rejected because the organization has reached its maximum active free-project limit. Therefore the database schema could not be inspected or the RLS migration applied from this task.
+Run `flutter pub get`, `flutter analyze`, and `flutter test` on a Flutter-enabled environment. Configure Supabase Google, Phone, and optional Facebook providers, add the exact native redirect URI, verify the `users` profile RLS policies from the earlier migration, and set real delivery charges in `shipping_settings` instead of the initial zero defaults.
 
-After restoring or upgrading the Supabase project, apply the migration, enable the Phone, Google, and optional Facebook providers, and add the exact redirect URI `io.paikari.shop://login-callback/` to Supabase Auth URL Configuration. For web builds, configure the deployed web URL and local URL as additional redirect URLs; the app uses the Supabase Site URL on web and the custom deep link on native platforms.
+## References
 
-Then run:
-
-```bash
-flutter pub get
-flutter analyze
-flutter test
-```
-
-Finally, verify that new signups cannot self-assign `admin`, that a user can read/update only their own `users` row, and that Google OAuth returns to the Android/iOS app.
+[1]: https://supabase.com/docs/reference/dart/auth-signinwithoauth "Supabase Flutter OAuth reference"
+[2]: https://supabase.com/docs/reference/dart/auth-onauthstatechange "Supabase Flutter auth state reference"
+[3]: https://supabase.com/docs/guides/auth/native-mobile-deep-linking "Supabase native mobile deep linking"
+[4]: https://supabase.com/docs/guides/auth/redirect-urls "Supabase Auth redirect URL configuration"
