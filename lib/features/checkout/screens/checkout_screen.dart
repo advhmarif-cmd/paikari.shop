@@ -22,6 +22,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _phoneController = TextEditingController();
 
   String _selectedPaymentMethod = 'Cash on Delivery';
+  String _selectedDeliveryZone = 'inside';
 
   @override
   void dispose() {
@@ -91,6 +92,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 validator: (value) =>
                     value == null || value.isEmpty ? 'প্রয়োজনীয়' : null,
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedDeliveryZone,
+                decoration: const InputDecoration(
+                  labelText: 'ডেলিভারি এলাকা',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'inside', child: Text('ঢাকার ভিতরে')),
+                  DropdownMenuItem(value: 'outside', child: Text('ঢাকার বাইরে')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => _selectedDeliveryZone = value);
+                },
+              ),
               const SizedBox(height: 30),
               Text(l10n.paymentMethod,
                   style: const TextStyle(
@@ -128,7 +144,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(l10n.subtotal),
+                        const Text('আনুমানিক subtotal'),
                         Text('৳${cartState.totalAmount.toStringAsFixed(2)}'),
                       ],
                     ),
@@ -138,7 +154,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       children: [
                         const Text('মোট (Total)',
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text('৳${cartState.totalAmount.toStringAsFixed(2)}',
+                        Text('সার্ভারে যাচাই হবে',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: PaikariTheme.primaryColor)),
@@ -157,38 +173,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ? null
                       : () async {
                           if (_formKey.currentState!.validate()) {
-                            final order = Order(
-                              id: DateTime.now()
-                                  .millisecondsSinceEpoch
-                                  .toString(),
-                              items: cartState.items.values.toList(),
-                              totalAmount: cartState.totalAmount,
-                              shippingAddress: Address(
-                                streetAddress: _streetController.text,
-                                city: _districtController.text,
-                                state: _thanaController.text,
-                                zipCode: '',
-                                phoneNumber: _phoneController.text,
-                              ),
-                              paymentMethod: _selectedPaymentMethod,
-                              createdAt: DateTime.now(),
+                            final address = Address(
+                              streetAddress: _streetController.text.trim(),
+                              city: _districtController.text.trim(),
+                              state: _thanaController.text.trim(),
+                              zipCode: '',
+                              phoneNumber: _phoneController.text.trim(),
                             );
 
-                            await ref
+                            final confirmedOrder = await ref
                                 .read(orderProvider.notifier)
-                                .placeOrder(order);
+                                .placeOrder(
+                                  items: cartState.items.values.toList(),
+                                  shippingAddress: address,
+                                  deliveryZone: _selectedDeliveryZone,
+                                  paymentMethod: _selectedPaymentMethod,
+                                );
 
                             if (!context.mounted) return;
 
-                            final orderResult = ref.read(orderProvider);
-                            if (orderResult.hasError) {
+                            if (confirmedOrder == null) {
+                              final orderResult = ref.read(orderProvider);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content:
-                                        Text(orderResult.error.toString())),
+                                SnackBar(content: Text(orderResult.error.toString())),
                               );
                             } else {
-                              _showSuccessDialog();
+                              _showSuccessDialog(confirmedOrder);
                             }
                           }
                         },
@@ -210,14 +220,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(Order order) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
         content: const Text(
-          'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!',
+          'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!\n\nসার্ভার-নির্ধারিত মোট: ৳${order.totalAmount.toStringAsFixed(2)}',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 18),
         ),

@@ -12,7 +12,7 @@ io.paikari.shop://login-callback/
 
 The same custom URL scheme must be registered in the Android and iOS app configuration. For web builds, add the deployed web URL and local development URL to the Supabase redirect allow list.
 
-The app currently retains Firebase Core/Firestore/Storage for the existing order and trade-license upload repositories. Firebase Auth, Firebase Google Sign-In, Firebase Facebook Auth, and Firebase phone-auth dependencies have been removed from the application flow.
+The app uses Supabase Auth and Supabase RPC for identity and order creation. Firebase Core/Storage remain only for the existing trade-license upload repository. Firebase Auth, Firebase Google Sign-In, Firebase Facebook Auth, Firebase phone-auth, and Firestore order persistence have been removed from the application flow.
 
 ## Supabase Auth provider checklist
 
@@ -23,9 +23,9 @@ The app currently retains Firebase Core/Firestore/Storage for the existing order
 - Ensure the `users` table has an RLS policy allowing an authenticated user to read and update only their own profile row.
 - Ensure role assignment is not client-controlled; new public signups must be created as `consumer` unless an administrator promotes them.
 
-## Remaining Firebase services
+## Remaining Firebase service
 
-If Firestore orders or Firebase Storage uploads remain enabled, configure the platform-specific Firebase files required by those services and enforce Firestore/Storage security rules separately. Firebase Auth configuration files are no longer needed for the login flow.
+If Firebase Storage uploads remain enabled, configure the platform-specific Firebase files required by that service and enforce Storage security rules separately. Firebase Auth configuration files are no longer needed for the login flow.
 
 ## Development checks
 

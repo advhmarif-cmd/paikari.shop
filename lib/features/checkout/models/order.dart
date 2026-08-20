@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:paikari_shop/features/cart/models/cart_item.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/checkout/models/address.dart';
@@ -24,49 +23,43 @@ class Order {
     this.status = OrderStatus.pending,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'items': items
-          .map((x) => {
-                'productId': x.product.id,
-                'quantity': x.quantity,
-                'price': x.price
-              })
-          .toList(),
-      'totalAmount': totalAmount,
-      'shippingAddress': shippingAddress.toJson(),
-      'paymentMethod': paymentMethod,
-      'createdAt': createdAt.toIso8601String(),
-      'status': status.name,
-    };
-  }
+  factory Order.fromSupabase(Map<String, dynamic> data) {
+    final rawItems = (data['items'] as List<dynamic>? ?? const []);
+    final items = rawItems.map((rawItem) {
+      final item = Map<String, dynamic>.from(rawItem as Map);
+      final productId = item['productId'] as String? ?? '';
+      final unitPrice = (item['unitPrice'] as num?)?.toDouble() ?? 0;
+      return CartItem(
+        product: Product(
+          id: productId,
+          name: item['productName'] as String? ?? '',
+          description: '',
+          retailPrice: unitPrice,
+          wholesaleTiers: const [],
+          imageUrl: item['imageUrl'] as String? ?? '',
+          category: '',
+          isAvailable: true,
+        ),
+        quantity: (item['quantity'] as num?)?.toInt() ?? 1,
+      );
+    }).toList();
 
-  factory Order.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final rawAddress = Map<String, dynamic>.from(
+      (data['shipping_address'] as Map?) ?? const {},
+    );
+    final rawStatus = (data['status'] as String? ?? 'pending').toLowerCase();
+
     return Order(
-      id: doc.id,
-      items: (data['items'] as List<dynamic>)
-          .map((x) => CartItem(
-                product: Product(
-                  id: x['productId'] as String,
-                  name: '',
-                  description: '',
-                  retailPrice: 0,
-                  wholesaleTiers: [],
-                  imageUrl: '',
-                  category: '',
-                  isAvailable: true,
-                ),
-                quantity: x['quantity'] as int,
-              ))
-          .toList(),
-      totalAmount: (data['totalAmount'] as num).toDouble(),
-      shippingAddress:
-          Address.fromJson(data['shippingAddress'] as Map<String, dynamic>),
-      paymentMethod: data['paymentMethod'] as String,
-      createdAt: DateTime.parse(data['createdAt'] as String),
-      status: OrderStatus.values.firstWhere((e) => e.name == data['status']),
+      id: data['id'] as String,
+      items: items,
+      totalAmount: (data['total_amount'] as num?)?.toDouble() ?? 0,
+      shippingAddress: Address.fromJson(rawAddress),
+      paymentMethod: data['payment_method'] as String? ?? 'Cash on Delivery',
+      createdAt: DateTime.tryParse(data['created_at'] as String? ?? '') ?? DateTime.now(),
+      status: OrderStatus.values.firstWhere(
+        (status) => status.name == rawStatus,
+        orElse: () => OrderStatus.pending,
+      ),
     );
   }
 }
