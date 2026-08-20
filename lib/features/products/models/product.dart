@@ -9,8 +9,8 @@ class WholesaleTier {
 
   factory WholesaleTier.fromJson(Map<String, dynamic> json) {
     return WholesaleTier(
-      minQuantity: json['minQuantity'] as int,
-      price: (json['price'] as num).toDouble(),
+      minQuantity: (json['minQuantity'] ?? json['min_quantity'] ?? 1) as int,
+      price: ((json['price'] as num?) ?? 0).toDouble(),
     );
   }
 
@@ -31,6 +31,8 @@ class Product {
   final String imageUrl;
   final String category;
   final bool isAvailable;
+  final String source;
+  final String? originProductId;
 
   const Product({
     required this.id,
@@ -41,20 +43,31 @@ class Product {
     required this.imageUrl,
     required this.category,
     required this.isAvailable,
+    this.source = 'paikari',
+    this.originProductId,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    final rawTiers = (json['wholesaleTiers'] ?? json['wholesale_tiers'] ?? const []) as List<dynamic>;
+    final rawImages = (json['images'] as List<dynamic>?) ?? const [];
+    final rawImageUrl = json['imageUrl'] ?? json['image_url'];
+    final imageUrl = rawImageUrl as String? ?? (rawImages.isNotEmpty ? rawImages.first as String : '');
+    final rawRetailPrice = json['retailPrice'] ?? json['retail_price'] ?? json['sale_price'];
+    final rawAvailable = json['isAvailable'] ?? json['is_active'];
+
     return Product(
       id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      retailPrice: (json['retailPrice'] as num).toDouble(),
-      wholesaleTiers: (json['wholesaleTiers'] as List<dynamic>)
-          .map((e) => WholesaleTier.fromJson(e as Map<String, dynamic>))
+      name: (json['name'] ?? json['title'] ?? '') as String,
+      description: (json['description'] ?? '') as String,
+      retailPrice: (rawRetailPrice as num? ?? 0).toDouble(),
+      wholesaleTiers: rawTiers
+          .map((tier) => WholesaleTier.fromJson(Map<String, dynamic>.from(tier as Map)))
           .toList(),
-      imageUrl: json['imageUrl'] as String,
-      category: json['category'] as String,
-      isAvailable: json['isAvailable'] as bool,
+      imageUrl: imageUrl,
+      category: (json['category'] ?? '') as String,
+      isAvailable: (rawAvailable as bool?) ?? true,
+      source: (json['source'] ?? 'paikari') as String,
+      originProductId: json['origin_product_id'] as String?,
     );
   }
 
@@ -68,6 +81,8 @@ class Product {
       'imageUrl': imageUrl,
       'category': category,
       'isAvailable': isAvailable,
+      'source': source,
+      'origin_product_id': originProductId,
     };
   }
 }

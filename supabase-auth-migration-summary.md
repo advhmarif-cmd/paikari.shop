@@ -1,28 +1,38 @@
-# Paikari.shop Auth and order-security handoff
+# Paikari.shop Auth, order security, and Hybrid B1 catalog handoff
 
 ## Implementation status
 
-The migration is complete locally on branch `chore/supabase-auth-migration`. The branch contains three commits: `f81c681` for Firebase Auth to Supabase Auth, `28828e6` for server-authoritative order pricing, and `a7c6277` for removing the obsolete Firestore order repository. The working tree is clean.
+The Firebase Auth to Supabase Auth migration and server-authoritative order hardening are merged on GitHub `main` at commit `a2c1c02`. The Hybrid B1 catalog changes are now prepared locally on branch `chore/supabase-auth-migration` and are ready to be committed to `main` after the final repository checks.
 
-The Supabase migration `secure_orders_rpc` was applied successfully to the Paikari.shop project. Live verification confirms that `public.order_records` and `public.shipping_settings` exist with RLS enabled, the `order_records_select_own` policy restricts reads to `user_id = auth.uid()`, and the `place_order_from_cart` function exists.
+Paikari.shop remains a separate Flutter application. Its B2C catalog now reads from `public.catalog_products`, which contains both read-only shared products mastered by Origen-Prime (`source = 'origen'`) and locally owned marketplace products (`source = 'paikari'`). The current live catalog contains the Origen demo product `default-product`, with retail price `৳2400` and sale price `৳2000`. The customer-facing `public.b2c_products` view returns that active row.
 
 ## Completed changes
 
-Firebase Auth has been replaced by Supabase Auth for session state, Phone OTP, Google OAuth, optional Facebook OAuth, profile provisioning, signup, and route guards. Android and iOS use the `io.paikari.shop://login-callback/` deep-link scheme. Firebase Auth SDKs and provider dependencies were removed.
+Firebase Auth has been replaced by Supabase Auth for session state, Phone OTP, Google OAuth, optional Facebook OAuth, profile provisioning, signup, and route guards. Android and iOS use the `io.paikari.shop://login-callback/` deep-link scheme. Firebase Auth SDKs and provider dependencies were removed, while Firebase Core/Storage remain only for the existing trade-license upload path.
 
-Order persistence no longer uses Firestore. The checkout screen sends only product IDs, quantities, shipping address, delivery zone, and payment method to `place_order_from_cart`. The RPC reads the current product price and wholesale tiers from Supabase, validates product availability and quantity, calculates delivery and total values, and inserts the order under the authenticated user. The client-side cart total remains display-only and is not used as the trusted amount.
+Order persistence no longer uses Firestore. The checkout screen sends only product IDs, quantities, shipping address, delivery zone, and payment method to `place_order_from_cart`. The RPC reads current prices and wholesale tiers from `catalog_products`, validates availability and quantities, calculates delivery and total values, and inserts the order under the authenticated user. Client-side totals remain display-only and are not trusted for the stored order amount.
 
-Order history now streams from `order_records` and is filtered by the current Supabase user ID. The former Firestore order repository and `cloud_firestore` dependency were removed. Firebase Core/Storage remain only for the existing trade-license upload path.
+The Hybrid B1 catalog schema adds source ownership, origin-product mapping, active-state controls, and RLS policies. Origen rows are read-only from Paikari’s client side. Authenticated users can create their own `paikari` rows through the repository, while shared `origen` rows cannot be edited from Paikari. The repository supports both Origen snake_case fields and the existing Paikari camelCase fields.
+
+The `sync-origen-catalog` Supabase Edge Function is deployed and active with JWT verification enabled. It fetches active products from `https://origen-prime.vercel.app/api/products`, upserts shared rows, and deactivates previously synced Origen products that are no longer returned. The current function defaults to that URL but accepts an `ORIGEN_CATALOG_URL` secret for future configuration.
+
+The product-card rendering path was adjusted for shared Origen products that do not have wholesale tiers. Such products now display retail pricing and an Origen label instead of indexing an empty list and crashing. Local wholesale products retain the existing wholesale-price presentation.
 
 ## Verification and limitations
 
-Static checks pass for `git diff --check`, removal of Firestore order references, and removal of old Firebase Auth references. The live Supabase migration and RLS policy checks passed. Flutter/Dart are not installed in the sandbox, so `flutter pub get`, `flutter analyze`, and `flutter test` could not be run. The lockfile should be regenerated locally with `flutter pub get`.
+Live Supabase verification confirmed that `public.catalog_products` contains the seeded Origen product and that `public.b2c_products` exposes the same active row. The catalog migration, the order-RPC migration, and the Edge Function deployment all completed successfully. The Edge Function is active with JWT verification enabled.
 
-The GitHub push was rejected by the available Git credential with HTTP 403, so the branch has not been pushed automatically. A complete patch is available at `/home/ubuntu/paikari-auth-and-order-hardening.patch`.
+The sandbox does not have Flutter/Dart installed, so `flutter pub get`, `flutter analyze`, `flutter test`, Android build validation, and device-level UI smoke tests could not be run here. These checks must be run on a Flutter-enabled development machine. The lockfile should be regenerated locally with `flutter pub get` if dependency metadata has changed.
 
-## Required follow-up
+## Required launch configuration
 
-Run `flutter pub get`, `flutter analyze`, and `flutter test` on a Flutter-enabled environment. Configure Supabase Google, Phone, and optional Facebook providers, add the exact native redirect URI, verify the `users` profile RLS policies from the earlier migration, and set real delivery charges in `shipping_settings` instead of the initial zero defaults.
+Before live launch, configure Supabase Auth providers for Phone OTP and Google OAuth, optionally enable Facebook OAuth, and register the exact native redirect URI `io.paikari.shop://login-callback/`. Replace the two zero-valued rows in `shipping_settings` with the actual inside-city and outside-city delivery charges. Keep the Edge Function JWT verification enabled and set `ORIGEN_CATALOG_URL` only if the default Origen endpoint should be overridden.
+
+Origen-Prime still requires its Vercel environment variables to be configured: `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `ADMIN_PASSWORD`, a random `ADMIN_SESSION_SECRET` of at least 32 characters, and `PUBLIC_SITE_ORIGIN=https://origen-prime.vercel.app`. Until those values are present in Vercel, the deployed frontend/API may not use the hardened runtime configuration even though the source changes are already merged.
+
+## Recommended final validation
+
+On a Flutter-enabled machine, run `flutter pub get`, `flutter analyze`, and `flutter test`. Then sign in to Paikari.shop, verify that the shared Origen product appears in the B2C catalog, add a local Paikari product through the vendor flow, confirm that shared Origen rows cannot be edited, and place a test order. The resulting order total should match the server response from `place_order_from_cart`, not any client-provided amount.
 
 ## References
 
@@ -30,3 +40,4 @@ Run `flutter pub get`, `flutter analyze`, and `flutter test` on a Flutter-enable
 [2]: https://supabase.com/docs/reference/dart/auth-onauthstatechange "Supabase Flutter auth state reference"
 [3]: https://supabase.com/docs/guides/auth/native-mobile-deep-linking "Supabase native mobile deep linking"
 [4]: https://supabase.com/docs/guides/auth/redirect-urls "Supabase Auth redirect URL configuration"
+[5]: https://supabase.com/docs/guides/functions "Supabase Edge Functions documentation"

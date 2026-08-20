@@ -52,43 +52,66 @@ class ProductCard extends StatelessWidget {
                         fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '৳${product.retailPrice.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          decoration: TextDecoration.lineThrough,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '৳${product.wholesaleTiers.first.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: PaikariTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: PaikariTheme.secondaryColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'পাইকারি (Wholesale)',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: PaikariTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final wholesalePrice = product.wholesaleTiers.isEmpty
+                          ? null
+                          : product.wholesaleTiers.first.price;
+                      final displayPrice = wholesalePrice ?? product.retailPrice;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (wholesalePrice != null) ...[
+                                Text(
+                                  '৳${product.retailPrice.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    decoration: TextDecoration.lineThrough,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(
+                                '৳${displayPrice.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  color: PaikariTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: PaikariTheme.secondaryColor
+                                  .withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              wholesalePrice == null
+                                  ? (product.source == 'origen'
+                                      ? 'Origen পণ্য'
+                                      : 'খুচরা পণ্য'),
+                                  : 'পাইকারি (Wholesale)',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: PaikariTheme.primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
