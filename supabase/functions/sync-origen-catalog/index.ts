@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const origenCatalogUrl = Deno.env.get("ORIGEN_CATALOG_URL") ?? "https://origen-prime.vercel.app/api/products";
+const origenSyncSecret = Deno.env.get("ORIGEN_SYNC_SECRET");
 
 if (!supabaseUrl || !serviceRoleKey) {
   throw new Error("Supabase service configuration is missing");
@@ -36,11 +37,18 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "POST required" }, 405);
 
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return json({ error: "Authentication required" }, 401);
-  const accessToken = authHeader.slice("Bearer ".length);
-  const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
-  if (authError || !authData.user) return json({ error: "Invalid session" }, 401);
+  const syncSecret = request.headers.get("x-origen-sync-secret");
+  const hasValidSyncSecret = Boolean(origenSyncSecret && syncSecret && syncSecret === origenSyncSecret);
+  let triggeredBy = "service-secret";
+
+  if (!hasValidSyncSecret) {
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Authentication required" }, 401);
+    const accessToken = authHeader.slice("Bearer ".length);
+    const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !authData.user) return json({ error: "Invalid session" }, 401);
+    triggeredBy = authData.user.id;
+  }
 
   try {
     const response = await fetch(origenCatalogUrl, {
@@ -118,7 +126,7 @@ Deno.serve(async (request) => {
       synced: rows.length,
       deactivated: removedIds.length,
       source: "origen",
-      triggeredBy: authData.user.id,
+      triggeredBy,
     });
   } catch (error) {
     console.error("Hybrid catalog sync failed", error);

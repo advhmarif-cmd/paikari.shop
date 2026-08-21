@@ -14,7 +14,7 @@ Order persistence no longer uses Firestore. The checkout screen sends only produ
 
 The Hybrid B1 catalog schema adds source ownership, origin-product mapping, active-state controls, and RLS policies. Origen rows are read-only from Paikari’s client side. Authenticated users can create their own `paikari` rows through the repository, while shared `origen` rows cannot be edited from Paikari. The repository supports both Origen snake_case fields and the existing Paikari camelCase fields.
 
-The `sync-origen-catalog` Supabase Edge Function is deployed and active with JWT verification enabled. It fetches active products from `https://origen-prime.vercel.app/api/products`, upserts shared rows, and deactivates previously synced Origen products that are no longer returned. The current function defaults to that URL but accepts an `ORIGEN_CATALOG_URL` secret for future configuration.
+The `sync-origen-catalog` Supabase Edge Function is deployed with JWT verification enabled. It fetches active products from `https://origen-prime.vercel.app/api/products`, upserts shared rows, and deactivates previously synced Origen products that are no longer returned. It supports the normal authenticated JWT path and an optional server-to-server `x-origen-sync-secret` header backed by the `ORIGEN_SYNC_SECRET` Edge Function secret. The current function defaults to that URL but accepts an `ORIGEN_CATALOG_URL` secret for future configuration.
 
 The product-card rendering path was adjusted for shared Origen products that do not have wholesale tiers. Such products now display retail pricing and an Origen label instead of indexing an empty list and crashing. Local wholesale products retain the existing wholesale-price presentation.
 
@@ -26,7 +26,7 @@ The sandbox does not have Flutter/Dart installed, so `flutter pub get`, `flutter
 
 ## Required launch configuration
 
-Before live launch, configure Supabase Auth providers for Phone OTP and Google OAuth, optionally enable Facebook OAuth, and register the exact native redirect URI `io.paikari.shop://login-callback/`. Replace the two zero-valued rows in `shipping_settings` with the actual inside-city and outside-city delivery charges. Keep the Edge Function JWT verification enabled and set `ORIGEN_CATALOG_URL` only if the default Origen endpoint should be overridden.
+Before live launch, configure Supabase Auth providers for Phone OTP and Google OAuth, optionally enable Facebook OAuth, and register the exact native redirect URI `io.paikari.shop://login-callback/`. Replace the two zero-valued rows in `shipping_settings` with the actual inside-city and outside-city delivery charges. Keep the Edge Function JWT verification enabled, set a strong `ORIGEN_SYNC_SECRET` if Origen admin-triggered sync is needed, and set `ORIGEN_CATALOG_URL` only if the default Origen endpoint should be overridden.
 
 Origen-Prime still requires its Vercel environment variables to be configured: `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `ADMIN_PASSWORD`, a random `ADMIN_SESSION_SECRET` of at least 32 characters, and `PUBLIC_SITE_ORIGIN=https://origen-prime.vercel.app`. Until those values are present in Vercel, the deployed frontend/API may not use the hardened runtime configuration even though the source changes are already merged.
 
