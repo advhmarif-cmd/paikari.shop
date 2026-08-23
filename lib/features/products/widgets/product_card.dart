@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
+import 'package:paikari_shop/core/widgets/product_image.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 
 class ProductCard extends StatelessWidget {
@@ -14,109 +15,153 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final wholesalePrice = product.wholesaleTiers.isEmpty
+        ? null
+        : product.wholesaleTiers.first.price;
+    final displayPrice = wholesalePrice ?? product.retailPrice;
+    final isShared = product.source == 'origen';
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        onTap: product.isAvailable ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Hero(
-                tag: 'product-${product.id}',
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(12)),
-                    image: DecorationImage(
-                      image: NetworkImage(product.imageUrl),
+            AspectRatio(
+              aspectRatio: 1.08,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
+                    tag: 'product-${product.id}',
+                    child: ProductImage(
+                      url: product.imageUrl,
                       fit: BoxFit.cover,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: _SourceBadge(isShared: isShared),
+                  ),
+                  if (!product.isAvailable)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'স্টক শেষ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (product.category.trim().isNotEmpty)
+                    Text(
+                      product.category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
                   Text(
                     product.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Builder(
-                    builder: (context) {
-                      final wholesalePrice = product.wholesaleTiers.isEmpty
-                          ? null
-                          : product.wholesaleTiers.first.price;
-                      final displayPrice = wholesalePrice ?? product.retailPrice;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              if (wholesalePrice != null) ...[
-                                Text(
-                                  '৳${product.retailPrice.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    decoration: TextDecoration.lineThrough,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              Text(
-                                '৳${displayPrice.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  color: PaikariTheme.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (wholesalePrice != null) ...[
+                        Text(
+                          '৳${product.retailPrice.toStringAsFixed(0)}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                            decoration: TextDecoration.lineThrough,
                           ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: PaikariTheme.secondaryColor
-                                  .withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              wholesalePrice == null
-                                  ? (product.source == 'origen'
-                                      ? 'Origen পণ্য'
-                                      : 'খুচরা পণ্য'),
-                                  : 'পাইকারি (Wholesale)',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: PaikariTheme.primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        '৳${displayPrice.toStringAsFixed(0)}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: PaikariTheme.primaryColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    wholesalePrice == null
+                        ? (isShared ? 'Origen shared product' : 'খুচরা মূল্য')
+                        : 'পাইকারি মূল্য থেকে শুরু',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SourceBadge extends StatelessWidget {
+  final bool isShared;
+
+  const _SourceBadge({required this.isShared});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        child: Text(
+          isShared ? 'ORIGEN' : 'PAIKARI',
+          style: TextStyle(
+            color: isShared ? PaikariTheme.primaryColor : Colors.black87,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );

@@ -28,7 +28,7 @@ Future<void> main() async {
     authFlowType: AuthFlowType.pkce,
   );
 
-  // Firestore still backs the existing order repository in this staged migration.
+  // Firebase remains only for legacy storage/trade-license uploads; auth and orders use Supabase.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -110,6 +110,8 @@ class HomeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final productsAsync = ref.watch(productListProvider);
 
+    final cartCount = ref.watch(cartProvider).itemCount;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -128,10 +130,11 @@ class HomeScreen extends ConsumerWidget {
           Stack(
             children: [
               IconButton(
+                tooltip: l10n.cart,
                 icon: const Icon(Icons.shopping_cart_outlined),
                 onPressed: () => Navigator.pushNamed(context, '/cart'),
               ),
-              if (ref.watch(cartProvider).itemCount > 0)
+              if (cartCount > 0)
                 Positioned(
                   right: 8,
                   top: 8,
@@ -141,17 +144,10 @@ class HomeScreen extends ConsumerWidget {
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text(
-                      '${ref.watch(cartProvider).itemCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      '$cartCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -159,47 +155,113 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
           IconButton(
+            tooltip: 'প্রোফাইল',
             icon: const Icon(Icons.person_outline),
             onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),
         ],
       ),
       body: productsAsync.when(
-        data: (products) => GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: products.length,
-          itemBuilder: (context, index) => ProductCard(
-            product: products[index],
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ProductDetailScreen(product: products[index]),
+        data: (products) => products.isEmpty
+            ? const _EmptyCatalog()
+            : RefreshIndicator(
+                onRefresh: () async {
+                  await ref.refresh(productListProvider.future);
+                },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 700 ? 4 : 2;
+                    return GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        mainAxisExtent: 300,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: products.length,
+                      itemBuilder: (context, index) => ProductCard(
+                        product: products[index],
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductDetailScreen(product: products[index]),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+              ),
+        loading: () => LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 700 ? 4 : 2;
+            return GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisExtent: 300,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: columns * 2,
+              itemBuilder: (context, index) => const ProductCardShimmer(),
+            );
+          },
         ),
-        loading: () => GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: 4,
-          itemBuilder: (context, index) => const ProductCardShimmer(),
+        error: (err, stack) => _CatalogError(onRetry: () => ref.invalidate(productListProvider)),
+      ),
+    );
+  }
+}
+
+
+class _EmptyCatalog extends StatelessWidget {
+  const _EmptyCatalog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.storefront_outlined, size: 68, color: PaikariTheme.primaryColor.withValues(alpha: 0.7)),
+            const SizedBox(height: 18),
+            const Text('এখনও কোনো পণ্য নেই', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text('নতুন পণ্য যোগ হলে এখানে দেখা যাবে।', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+          ],
         ),
-        error: (err, stack) =>
-            const Center(child: Text('পণ্য লোড করতে সমস্যা হয়েছে')),
+      ),
+    );
+  }
+}
+
+class _CatalogError extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _CatalogError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 64, color: Colors.grey.shade500),
+            const SizedBox(height: 16),
+            const Text('পণ্য লোড করা যায়নি', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text('ইন্টারনেট connection যাচাই করে আবার চেষ্টা করুন।', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('আবার চেষ্টা করুন')),
+          ],
+        ),
       ),
     );
   }
