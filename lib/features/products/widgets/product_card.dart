@@ -6,19 +6,21 @@ import 'package:paikari_shop/features/products/models/product.dart';
 class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback onTap;
+  final bool businessMode;
 
   const ProductCard({
     super.key,
     required this.product,
     required this.onTap,
+    this.businessMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final wholesalePrice = product.wholesaleTiers.isEmpty
-        ? null
-        : product.wholesaleTiers.first.price;
+    final wholesalePrice = businessMode && product.wholesaleTiers.isNotEmpty
+        ? product.wholesaleTiers.first.price
+        : null;
     final displayPrice = wholesalePrice ?? product.retailPrice;
     final isShared = product.source == 'origen';
 
@@ -121,8 +123,10 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     wholesalePrice == null
-                        ? (isShared ? 'Origen shared product' : 'খুচরা মূল্য')
-                        : 'পাইকারি মূল্য থেকে শুরু',
+                        ? (businessMode && product.moq > 1
+                            ? 'MOQ: ${product.moq} ${product.unitLabel}'
+                            : (isShared ? 'Origen shared product' : 'খুচরা মূল্য'))
+                        : 'MOQ: ${product.moq} ${product.unitLabel} · পাইকারি',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(

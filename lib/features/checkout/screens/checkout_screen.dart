@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
+import 'package:paikari_shop/features/cart/models/cart_item.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
 import 'package:paikari_shop/features/checkout/models/address.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart';
@@ -117,6 +118,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _submitOrder(CartState cartState) async {
     if (!_formKey.currentState!.validate()) return;
+
+    final items = cartState.items.values.toList();
+    CartItem? moqViolation;
+    for (final item in items) {
+      if (item.businessMode && item.quantity < item.product.moq) {
+        moqViolation = item;
+        break;
+      }
+    }
+    if (moqViolation != null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('B2B order-এর জন্য কমপক্ষে ${moqViolation.product.moq} ${moqViolation.product.unitLabel} প্রয়োজন।'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
     FocusScope.of(context).unfocus();
 
     final address = Address(

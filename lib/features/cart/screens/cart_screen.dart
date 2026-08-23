@@ -57,7 +57,7 @@ class CartScreen extends ConsumerWidget {
                       return _CartItemTile(
                         item: item,
                         onDecrease: () => ref.read(cartProvider.notifier).removeOneItem(item.product.id),
-                        onIncrease: () => ref.read(cartProvider.notifier).addItem(item.product),
+                        onIncrease: () => ref.read(cartProvider.notifier).addItem(item.product, businessMode: item.businessMode),
                         onRemove: () => ref.read(cartProvider.notifier).removeItem(item.product.id),
                       );
                     },
@@ -133,9 +133,17 @@ class _CartItemTile extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w800, height: 1.25),
                   ),
                   const SizedBox(height: 5),
-                  Text(
-                    '৳${item.price.toStringAsFixed(0)} / ইউনিট',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        '৳${item.price.toStringAsFixed(0)} / ${item.product.unitLabel}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                      if (item.businessMode)
+                        _CartBadge(label: 'B2B · MOQ ${item.product.moq}'),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -160,6 +168,23 @@ class _CartItemTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CartBadge extends StatelessWidget {
+  final String label;
+
+  const _CartBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: PaikariTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: PaikariTheme.primaryColor)),
       ),
     );
   }

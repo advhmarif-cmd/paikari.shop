@@ -9,11 +9,15 @@ import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/auth/screens/login_screen.dart';
 import 'package:paikari_shop/features/auth/screens/signup_screen.dart';
 import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
+import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/products/screens/product_detail_screen.dart';
 import 'package:paikari_shop/features/products/widgets/product_card.dart';
 import 'package:paikari_shop/features/products/providers/product_provider.dart';
 import 'package:paikari_shop/features/checkout/screens/checkout_screen.dart';
 import 'package:paikari_shop/features/profile/screens/profile_screen.dart';
+import 'package:paikari_shop/features/vendors/screens/vendor_onboarding_screen.dart';
+import 'package:paikari_shop/features/vendors/screens/vendor_dashboard_screen.dart';
+import 'package:paikari_shop/features/buyer/screens/business_buyer_screen.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 import 'package:paikari_shop/features/cart/screens/cart_screen.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
@@ -21,7 +25,7 @@ import 'package:paikari_shop/core/widgets/shimmer_loading.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
@@ -54,7 +58,7 @@ class PaikariApp extends StatelessWidget {
         Locale('en'),
         Locale('bn'),
       ],
-      locale: const Locale('bn'), // Default to Bangla
+      locale: const Locale('bn'),
       home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginScreen(),
@@ -63,6 +67,10 @@ class PaikariApp extends StatelessWidget {
         '/cart': (context) => const CartScreen(),
         '/checkout': (context) => const CheckoutScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/vendor/onboarding': (context) => const VendorOnboardingScreen(),
+        '/vendor/dashboard': (context) => const VendorDashboardScreen(),
+        '/vendor/products/new': (context) => const VendorProductFormScreen(),
+        '/buyer/business': (context) => const BusinessBuyerScreen(),
       },
     );
   }
@@ -102,25 +110,40 @@ class AuthWrapper extends ConsumerWidget {
   }
 }
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final productsAsync = ref.watch(productListProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  String _selectedCategory = 'সব';
+  bool _businessMode = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final productsAsync = ref.watch(productListProvider(_businessMode));
     final cartCount = ref.watch(cartProvider).itemCount;
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 16,
         title: Row(
           children: [
             Image.asset(
               'assets/logo.jpg',
               height: 40,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.store, size: 30),
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.store, size: 30),
             ),
             const SizedBox(width: 10),
             Text(l10n.appTitle),
@@ -140,16 +163,9 @@ class HomeScreen extends ConsumerWidget {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
                     constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '$cartCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
+                    child: Text('$cartCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                   ),
                 ),
             ],
@@ -162,60 +178,151 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: productsAsync.when(
-        data: (products) => products.isEmpty
-            ? const _EmptyCatalog()
-            : RefreshIndicator(
-                onRefresh: () async {
-                  await ref.refresh(productListProvider.future);
-                },
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 700 ? 4 : 2;
-                    return GridView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        mainAxisExtent: 300,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemCount: products.length,
-                      itemBuilder: (context, index) => ProductCard(
-                        product: products[index],
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProductDetailScreen(product: products[index]),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-        loading: () => LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 700 ? 4 : 2;
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                mainAxisExtent: 300,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: columns * 2,
-              itemBuilder: (context, index) => const ProductCardShimmer(),
-            );
-          },
-        ),
-        error: (err, stack) => _CatalogError(onRetry: () => ref.invalidate(productListProvider)),
+        data: (products) => _buildCatalog(context, products),
+        loading: () => _buildLoadingGrid(context),
+        error: (err, stack) => _CatalogError(onRetry: () => ref.invalidate(productListProvider(_businessMode))),
       ),
     );
   }
-}
 
+  Widget _buildCatalog(BuildContext context, List<Product> products) {
+    final categories = <String>{
+      'সব',
+      ...products.map((product) => product.category.trim()).where((category) => category.isNotEmpty),
+    }.toList();
+    final normalizedQuery = _query.trim().toLowerCase();
+    final filteredProducts = products.where((product) {
+      final matchesQuery = normalizedQuery.isEmpty ||
+          product.name.toLowerCase().contains(normalizedQuery) ||
+          product.description.toLowerCase().contains(normalizedQuery) ||
+          product.category.toLowerCase().contains(normalizedQuery);
+      final matchesCategory = _selectedCategory == 'সব' || product.category == _selectedCategory;
+      return matchesQuery && matchesCategory;
+    }).toList();
+
+    if (products.isEmpty) return const _EmptyCatalog();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _query = value),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'পণ্য, category বা supplier খুঁজুন',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'সার্চ মুছুন',
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _query = '');
+                      },
+                      icon: const Icon(Icons.close),
+                    ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Row(
+            children: [
+              const Text('কেনাকাটার ধরন', style: TextStyle(fontWeight: FontWeight.w900)),
+              const Spacer(),
+              ChoiceChip(
+                label: const Text('B2C'),
+                selected: !_businessMode,
+                onSelected: (_) => setState(() => _businessMode = false),
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: const Text('B2B'),
+                selected: _businessMode,
+                onSelected: (_) => setState(() => _businessMode = true),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 42,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return ChoiceChip(
+                label: Text(category),
+                selected: _selectedCategory == category,
+                onSelected: (_) => setState(() => _selectedCategory = category),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: filteredProducts.isEmpty
+              ? const _EmptySearch()
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    await ref.refresh(productListProvider(_businessMode).future);
+                  },
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 700 ? 4 : 2;
+                      return GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisExtent: 300,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = filteredProducts[index];
+                          return ProductCard(
+                            product: product,
+                            businessMode: _businessMode,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => ProductDetailScreen(product: product, businessMode: _businessMode),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingGrid(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 700 ? 4 : 2;
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisExtent: 300,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: columns * 2,
+          itemBuilder: (context, index) => const ProductCardShimmer(),
+        );
+      },
+    );
+  }
+}
 
 class _EmptyCatalog extends StatelessWidget {
   const _EmptyCatalog();
@@ -236,6 +343,25 @@ class _EmptyCatalog extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EmptySearch extends StatelessWidget {
+  const _EmptySearch();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 80),
+        Icon(Icons.search_off, size: 58, color: Colors.grey.shade400),
+        const SizedBox(height: 16),
+        const Center(child: Text('এই filter-এ কোনো পণ্য নেই', style: TextStyle(fontWeight: FontWeight.w800))),
+        const SizedBox(height: 8),
+        Center(child: Text('অন্য keyword বা category দিয়ে চেষ্টা করুন।', style: TextStyle(color: Colors.grey))),
+      ],
     );
   }
 }

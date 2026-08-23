@@ -8,11 +8,10 @@ class ProductRepository {
 
   final SupabaseClient _supabase;
 
-  Future<List<Product>> getProducts() async {
+  Future<List<Product>> getProducts({bool businessMode = false}) async {
     final response = await _supabase
-        .from('catalog_products')
+        .from(businessMode ? 'b2b_products' : 'b2c_products')
         .select()
-        .eq('is_active', true)
         .order('updated_at', ascending: false);
 
     return (response as List)
@@ -43,6 +42,22 @@ class ProductRepository {
             .toList());
   }
 
+  Future<List<Product>> getMyLocalProducts() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('লগইন করা প্রয়োজন');
+
+    final response = await _supabase
+        .from('catalog_products')
+        .select()
+        .eq('source', 'paikari')
+        .eq('owner_id', user.id)
+        .order('updated_at', ascending: false);
+
+    return (response as List)
+        .map((json) => Product.fromJson(Map<String, dynamic>.from(json as Map)))
+        .toList();
+  }
+
   Future<Product> createLocalProduct({
     required String name,
     required String description,
@@ -50,7 +65,13 @@ class ProductRepository {
     required List<WholesaleTier> wholesaleTiers,
     required String imageUrl,
     required String category,
+    String? slug,
     String stockStatus = 'In Stock',
+    String? sku,
+    String unitLabel = 'unit',
+    int moq = 1,
+    int? stockQuantity,
+    bool isNegotiable = false,
   }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('লগইন করা প্রয়োজন');
@@ -60,6 +81,7 @@ class ProductRepository {
         .insert({
           'source': 'paikari',
           'owner_id': user.id,
+          'slug': slug?.trim().isNotEmpty == true ? slug!.trim() : _makeSlug(name),
           'name': name.trim(),
           'description': description.trim(),
           'retail_price': retailPrice,
@@ -68,6 +90,13 @@ class ProductRepository {
           'images': imageUrl.trim().isEmpty ? [] : [imageUrl.trim()],
           'category': category.trim(),
           'stock_status': stockStatus,
+          'sku': sku?.trim().isEmpty == true ? null : sku?.trim(),
+          'unit_label': unitLabel.trim().isEmpty ? 'unit' : unitLabel.trim(),
+          'moq': moq < 1 ? 1 : moq,
+          'stock_quantity': stockQuantity,
+          'reserved_quantity': 0,
+          'is_negotiable': isNegotiable,
+          'approval_status': 'pending',
           'is_active': false,
         })
         .select()
@@ -75,6 +104,16 @@ class ProductRepository {
 
     return Product.fromJson(Map<String, dynamic>.from(response));
   }
+}
+
+String _makeSlug(String value) {
+  final base = value
+      .toLowerCase()
+      .trim()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  final suffix = DateTime.now().millisecondsSinceEpoch.toString();
+  return '${base.isEmpty ? 'product' : base}-$suffix';
 }
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {

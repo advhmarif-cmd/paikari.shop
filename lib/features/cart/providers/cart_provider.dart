@@ -26,13 +26,14 @@ class CartState {
 class CartNotifier extends StateNotifier<CartState> {
   CartNotifier() : super(CartState());
 
-  void addItem(Product product) {
+  void addItem(Product product, {bool businessMode = false}) {
     if (state.items.containsKey(product.id)) {
       state = state.copyWith(
         items: {
           ...state.items,
           product.id: state.items[product.id]!.copyWith(
             quantity: state.items[product.id]!.quantity + 1,
+            businessMode: state.items[product.id]!.businessMode || businessMode,
           ),
         },
       );
@@ -40,7 +41,7 @@ class CartNotifier extends StateNotifier<CartState> {
       state = state.copyWith(
         items: {
           ...state.items,
-          product.id: CartItem(product: product, quantity: 1),
+          product.id: CartItem(product: product, quantity: 1, businessMode: businessMode),
         },
       );
     }

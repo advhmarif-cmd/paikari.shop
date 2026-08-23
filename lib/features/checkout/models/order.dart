@@ -12,6 +12,7 @@ class Order {
   final String paymentMethod;
   final DateTime createdAt;
   final OrderStatus status;
+  final String buyerMode;
 
   const Order({
     required this.id,
@@ -21,9 +22,11 @@ class Order {
     required this.paymentMethod,
     required this.createdAt,
     this.status = OrderStatus.pending,
+    this.buyerMode = 'b2c',
   });
 
   factory Order.fromSupabase(Map<String, dynamic> data) {
+    final buyerMode = (data['buyer_mode'] as String? ?? 'b2c').toLowerCase();
     final rawItems = (data['items'] as List<dynamic>? ?? const []);
     final items = rawItems.map((rawItem) {
       final item = Map<String, dynamic>.from(rawItem as Map);
@@ -39,8 +42,12 @@ class Order {
           imageUrl: item['imageUrl'] as String? ?? '',
           category: '',
           isAvailable: true,
+          sku: item['sku'] as String?,
+          moq: (item['moq'] as num?)?.toInt() ?? 1,
+          vendorId: item['vendorId'] as String?,
         ),
         quantity: (item['quantity'] as num?)?.toInt() ?? 1,
+        businessMode: (item['buyerMode'] as String? ?? buyerMode) == 'b2b',
       );
     }).toList();
 
@@ -60,6 +67,7 @@ class Order {
         (status) => status.name == rawStatus,
         orElse: () => OrderStatus.pending,
       ),
+      buyerMode: buyerMode == 'b2b' ? 'b2b' : 'b2c',
     );
   }
 }

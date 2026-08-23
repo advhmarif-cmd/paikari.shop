@@ -4,16 +4,21 @@ import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/core/widgets/product_image.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
+import 'package:paikari_shop/features/inquiries/widgets/inquiry_sheet.dart';
+import 'package:paikari_shop/features/vendors/models/vendor_profile.dart';
+import 'package:paikari_shop/features/vendors/providers/vendor_provider.dart';
 
 class ProductDetailScreen extends ConsumerWidget {
   final Product product;
+  final bool businessMode;
 
-  const ProductDetailScreen({super.key, required this.product});
+  const ProductDetailScreen({super.key, required this.product, this.businessMode = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isShared = product.source == 'origen';
+    final vendorAsync = product.vendorId == null ? null : ref.watch(publicVendorProfileProvider(product.vendorId!));
 
     return Scaffold(
       appBar: AppBar(title: const Text('পণ্যের বিবরণ')),
@@ -49,6 +54,8 @@ class ProductDetailScreen extends ConsumerWidget {
                         label: product.isAvailable ? 'স্টকে আছে' : 'স্টক শেষ',
                         color: product.isAvailable ? Colors.green.shade700 : Colors.red.shade700,
                       ),
+                      if (businessMode) _InfoChip(icon: Icons.business_center_outlined, label: 'B2B mode'),
+                      if (businessMode && product.moq > 1) _InfoChip(icon: Icons.inventory_2_outlined, label: 'MOQ ${product.moq} ${product.unitLabel}'),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -69,6 +76,15 @@ class ProductDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  if (vendorAsync != null)
+                    vendorAsync.when(
+                      data: (vendor) => vendor == null ? const SizedBox.shrink() : Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _VendorInfoCard(vendor: vendor),
+                      ),
+                      loading: () => const Padding(padding: EdgeInsets.only(top: 16), child: LinearProgressIndicator()),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
                   const SizedBox(height: 24),
                   Text(
                     'মূল্য তালিকা',
@@ -110,28 +126,72 @@ class ProductDetailScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-        child: ElevatedButton.icon(
-          onPressed: product.isAvailable
-              ? () {
-                  ref.read(cartProvider.notifier).addItem(product);
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      const SnackBar(
-                        content: Text('কার্টে যোগ করা হয়েছে'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                }
-              : null,
-          icon: const Icon(Icons.add_shopping_cart_outlined),
-          label: Text(product.isAvailable ? 'কার্টে যোগ করুন' : 'স্টক শেষ'),
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(54),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
+        child: Row(
+          children: [
+            if (businessMode && product.vendorId != null) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => showInquirySheet(context, ref, product),
+                  icon: const Icon(Icons.message_outlined),
+                  label: const Text('Inquiry'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(54),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: product.isAvailable
+                    ? () {
+                        ref.read(cartProvider.notifier).addItem(product, businessMode: businessMode);
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('কার্টে যোগ করা হয়েছে'),
+                              behavior: SnackBarBehavior.floating,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                      }
+                    : null,
+                icon: const Icon(Icons.add_shopping_cart_outlined),
+                label: Text(product.isAvailable ? 'কার্টে যোগ করুন' : 'স্টক শেষ'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _VendorInfoCard extends StatelessWidget {
+  final VendorProfile vendor;
+
+  const _VendorInfoCard({required this.vendor});
+
+  @override
+  Widget build(BuildContext context) {
+    final verified = vendor.verificationStatus == 'verified';
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: Colors.grey.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: CircleAvatar(child: Icon(verified ? Icons.verified_outlined : Icons.storefront_outlined)),
+        title: Text(vendor.storeName, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text('${vendor.city.isEmpty ? 'বাংলাদেশ' : vendor.city} · ${verified ? 'Verified supplier' : 'Supplier'}'),
+        trailing: verified ? const Icon(Icons.check_circle, color: Colors.green) : null,
       ),
     );
   }

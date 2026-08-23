@@ -19,6 +19,7 @@ class SupabaseOrderRepository {
     if (user == null) throw Exception('লগইন করা প্রয়োজন');
     if (items.isEmpty) throw Exception('কার্ট খালি আছে');
 
+    final businessMode = items.any((item) => item.businessMode);
     final response = await _supabase.rpc(
       'place_order_from_cart',
       params: {
@@ -26,11 +27,13 @@ class SupabaseOrderRepository {
             .map((item) => {
                   'productId': item.product.id,
                   'quantity': item.quantity,
+                  'buyerMode': item.businessMode ? 'b2b' : 'b2c',
                 })
             .toList(),
         'p_shipping_address': {
           ...shippingAddress.toJson(),
           'zone': deliveryZone,
+          'buyer_mode': businessMode ? 'b2b' : 'b2c',
         },
         'p_payment_method': paymentMethod,
       },
