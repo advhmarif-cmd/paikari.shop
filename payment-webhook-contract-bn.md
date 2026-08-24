@@ -1,6 +1,6 @@
 # Provider-neutral payment webhook contract
 
-এই contract কোনো নির্দিষ্ট Bangladesh payment provider-এর API ধরে নেয় না। Provider adapter-কে প্রথমে provider-এর callback payload থেকে নিচের normalized payload তৈরি করতে হবে, তারপর raw normalized JSON body-এর HMAC-SHA256 signature সহ Edge Function-এ পাঠাতে হবে।
+এই contract কোনো নির্দিষ্ট Bangladesh payment provider-এর API ধরে নেয় না। `supabase/functions/_shared/payment_adapter.ts` হলো normalized event-এর একক validation boundary। ভবিষ্যতের provider adapter প্রথমে provider callback payload থেকে normalized payload তৈরি করবে, তারপর raw normalized JSON body-এর HMAC-SHA256 signature সহ Edge Function-এ পাঠাবে।
 
 ## Endpoint contract
 
@@ -29,7 +29,7 @@
 }
 ```
 
-Edge Function প্রথমে raw body signature verify করে, তারপর payload validation করে এবং `service_role` Supabase client দিয়ে `confirm_order_payment` RPC call করে। Mobile client কখনও এই endpoint-এর secret, provider callback signature বা service role key পাবে না।
+Edge Function প্রথমে raw body signature verify করে, তারপর shared adapter দিয়ে payload validation করে এবং `service_role` Supabase client দিয়ে `confirm_order_payment` RPC call করে। Mobile client কখনও এই endpoint-এর secret, provider callback signature বা service role key পাবে না।
 
 ## Idempotency ও state safety
 
