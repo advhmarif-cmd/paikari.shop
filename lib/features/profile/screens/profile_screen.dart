@@ -97,7 +97,12 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 10),
             ref.watch(myNotificationsProvider).when(
               loading: () => const LinearProgressIndicator(),
-              error: (error, stack) => Text('Notification load করা যায়নি: $error'),
+              error: (error, stack) => Row(
+                children: [
+                  Expanded(child: Text('Notification load করা যায়নি', style: TextStyle(color: Colors.grey.shade700))),
+                  IconButton(tooltip: 'আবার চেষ্টা করুন', onPressed: () => ref.invalidate(myNotificationsProvider), icon: const Icon(Icons.refresh)),
+                ],
+              ),
               data: (notifications) => notifications.isEmpty
                   ? const Text('এখনও কোনো নতুন update নেই', style: TextStyle(color: Colors.grey))
                   : Column(children: notifications.take(3).map((notification) => _NotificationTile(notification: notification)).toList()),
@@ -151,7 +156,13 @@ class ProfileScreen extends ConsumerWidget {
                       },
                     ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('ত্রুটি: $err')),
+              error: (err, stack) => Center(
+                child: OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(profileOrdersProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Order আবার লোড করুন'),
+                ),
+              ),
             ),
           ],
         ),

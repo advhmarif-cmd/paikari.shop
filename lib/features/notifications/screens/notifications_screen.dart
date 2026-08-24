@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/notifications/models/marketplace_notification.dart';
 import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
+import 'package:intl/intl.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -50,7 +51,7 @@ class _NotificationListTile extends ConsumerWidget {
         title: Text(notification.title, style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text('${notification.body}\n${notification.createdAt.toLocal()}', maxLines: 3, overflow: TextOverflow.ellipsis),
+          child: Text('${notification.body}\n${DateFormat('dd MMM yyyy, hh:mm a').format(notification.createdAt.toLocal())}', maxLines: 3, overflow: TextOverflow.ellipsis),
         ),
         onTap: unread
             ? () async {
