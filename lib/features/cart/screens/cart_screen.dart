@@ -35,9 +35,16 @@ class CartScreen extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Row(
                     children: [
-                      Text(
-                        '${items.length} টি পণ্য',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${items.length} টি পণ্য', style: const TextStyle(fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 3),
+                          Text(
+                            items.any((item) => item.businessMode) ? 'B2B cart · MOQ প্রযোজ্য' : 'B2C cart',
+                            style: TextStyle(color: PaikariTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.w800),
+                          ),
+                        ],
                       ),
                       const Spacer(),
                       Text(
@@ -132,6 +139,11 @@ class _CartItemTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w800, height: 1.25),
                   ),
+                  if (item.product.vendorName != null && item.product.vendorName!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(item.product.vendorName!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w700)),
+                    ),
                   const SizedBox(height: 5),
                   Wrap(
                     spacing: 6,
@@ -143,6 +155,8 @@ class _CartItemTile extends StatelessWidget {
                       ),
                       if (item.businessMode)
                         _CartBadge(label: 'B2B · MOQ ${item.product.moq}'),
+                      if (item.product.stockQuantity != null)
+                        _CartBadge(label: 'Stock ${item.product.availableQuantity}'),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -232,6 +246,11 @@ class _CartSummary extends StatelessWidget {
         ),
         child: Column(
           children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('দাম ও stock checkout-এ server থেকে আবার যাচাই হবে', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            ),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

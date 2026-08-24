@@ -22,6 +22,8 @@ Phone OTP এবং Google sign-in দিয়ে buyer login পরীক্ষ�
 
 ## Buyer flow checks
 
+Buyer validation must also confirm that the Home app bar shows the unread notification badge, the notification inbox opens correctly, product cards show supplier and available-stock context when available, B2B search accepts SKU or supplier terms, the cart clearly shows B2B/B2C context, and a delivered order exposes the Return request action.
+
 | Flow | Expected result |
 |---|---|
 | B2C cart checkout | Server catalog price/stock দিয়ে order তৈরি হবে |
@@ -35,6 +37,8 @@ Phone OTP এবং Google sign-in দিয়ে buyer login পরীক্ষ�
 
 ## Vendor flow checks
 
+Vendor validation must also confirm that pull-to-refresh updates products, orders, quotations, inquiries and returns together, and that the return queue exposes only vendor-safe response states.
+
 Verified vendor-এর local product approval pending অবস্থায় public catalog-এ দেখা যাবে না। Vendor Center-এ order pending থেকে confirmed, processing, shipped এবং delivered ধারাবাহিকতায় যাবে। Shipped করার সময় courier name, tracking number এবং optional HTTPS URL দেওয়া যাবে। Shipment-এর পরে vendor cancellation button থাকবে না। Pending, confirmed অথবা processing অবস্থায় cancellation করলে reserved stock release হবে।
 
 ## Payment checks
@@ -42,6 +46,8 @@ Verified vendor-এর local product approval pending অবস্থায় publ
 Cash on Delivery order-এর server payment state `unpaid` থাকবে। Bkash selection এখন `pending` state তৈরি করবে; gateway confirmation না হওয়া পর্যন্ত paid দেখানো যাবে না। Webhook contract test করার সময় raw normalized JSON body-এর HMAC signature, provider event ID এবং service-only RPC requirement পরীক্ষা করতে হবে। একই provider ও event ID পুনরায় পাঠালে duplicate payment transition হবে না।
 
 ## Admin checks
+
+Admin validation must also confirm that payment reconciliation and return/dispute queues load only for an authenticated JWT with `app_metadata.role=admin`.
 
 Supabase Auth user-এর `app_metadata.role` সত্যিই `admin` না হলে `/admin/moderation` route কোনো moderation data দেখাবে না। Admin user vendor verification status এবং শুধু Paikari local product approval status পরিবর্তন করতে পারবে। Origen shared product edit বা approval operation-এর মাধ্যমে পরিবর্তনযোগ্য নয়।
 

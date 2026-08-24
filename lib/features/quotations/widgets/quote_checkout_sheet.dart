@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paikari_shop/features/quotations/models/quote_checkout_session.dart';
 import 'package:paikari_shop/features/quotations/providers/quotation_provider.dart';
 import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
+import 'package:intl/intl.dart';
 
 class _QuoteCheckoutSheet extends ConsumerStatefulWidget {
   final String sessionId;
@@ -59,7 +60,7 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
             const SizedBox(height: 4),
             Text('Agreed delivery: ৳${session.deliveryCharge.toStringAsFixed(0)} · Total: ৳${session.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(canCheckout ? 'Valid until ${session.expiresAt.toLocal()}' : 'এই quote session আর ব্যবহারযোগ্য নয় (${session.status})', style: TextStyle(color: canCheckout ? Colors.green.shade700 : Colors.red.shade700)),
+            Text(canCheckout ? 'Valid until ${DateFormat('dd MMM yyyy, hh:mm a').format(session.expiresAt.toLocal())}' : 'এই quote session আর ব্যবহারযোগ্য নয় (${session.status})', style: TextStyle(color: canCheckout ? Colors.green.shade700 : Colors.red.shade700)),
             const SizedBox(height: 16),
             if (canCheckout) ...[
               TextFormField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone number', prefixIcon: Icon(Icons.phone_outlined)), validator: _required),
@@ -76,6 +77,10 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
                 items: const [DropdownMenuItem(value: 'Cash on Delivery', child: Text('Cash on Delivery')), DropdownMenuItem(value: 'Bkash', child: Text('Bkash'))],
                 onChanged: (value) => setState(() => _paymentMethod = value ?? 'Cash on Delivery'),
               ),
+              if (_paymentMethod == 'Bkash') ...[
+                const SizedBox(height: 8),
+                const Text('Bkash gateway confirmation এখনো চালু হয়নি; এই order paid হিসেবে ধরা হবে না।', style: TextStyle(fontSize: 12, color: Colors.orange)),
+              ],
               const SizedBox(height: 16),
               SizedBox(
                 height: 54,

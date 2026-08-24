@@ -17,6 +17,8 @@ import 'package:paikari_shop/features/checkout/screens/checkout_screen.dart';
 import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.dart';
 import 'package:paikari_shop/features/admin/screens/admin_moderation_screen.dart';
 import 'package:paikari_shop/features/profile/screens/profile_screen.dart';
+import 'package:paikari_shop/features/notifications/screens/notifications_screen.dart';
+import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_onboarding_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_dashboard_screen.dart';
 import 'package:paikari_shop/features/buyer/screens/business_buyer_screen.dart';
@@ -74,6 +76,7 @@ class PaikariApp extends StatelessWidget {
           return QuoteCheckoutScreen(sessionId: sessionId);
         },
         '/profile': (context) => const ProfileScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
         '/vendor/onboarding': (context) => const VendorOnboardingScreen(),
         '/vendor/dashboard': (context) => const VendorDashboardScreen(),
         '/vendor/products/new': (context) => const VendorProductFormScreen(),
@@ -142,6 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final productsAsync = ref.watch(productListProvider(_businessMode));
     final cartCount = ref.watch(cartProvider).itemCount;
+    final unreadNotifications = ref.watch(myNotificationsProvider).valueOrNull?.where((item) => item.readAt == null).length ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -158,6 +162,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                tooltip: 'Notifications',
+                icon: const Icon(Icons.notifications_none_outlined),
+                onPressed: () => Navigator.pushNamed(context, '/notifications'),
+              ),
+              if (unreadNotifications > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text('$unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  ),
+                ),
+            ],
+          ),
           Stack(
             children: [
               IconButton(
@@ -203,7 +227,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final matchesQuery = normalizedQuery.isEmpty ||
           product.name.toLowerCase().contains(normalizedQuery) ||
           product.description.toLowerCase().contains(normalizedQuery) ||
-          product.category.toLowerCase().contains(normalizedQuery);
+          product.category.toLowerCase().contains(normalizedQuery) ||
+          (product.sku?.toLowerCase().contains(normalizedQuery) ?? false) ||
+          (product.vendorName?.toLowerCase().contains(normalizedQuery) ?? false);
       final matchesCategory = _selectedCategory == 'সব' || product.category == _selectedCategory;
       return matchesQuery && matchesCategory;
     }).toList();
@@ -287,7 +313,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columns,
-                          mainAxisExtent: 300,
+                          mainAxisExtent: 320,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -320,7 +346,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            mainAxisExtent: 300,
+            mainAxisExtent: 320,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),

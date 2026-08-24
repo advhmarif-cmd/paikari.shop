@@ -18,6 +18,11 @@ Paikari এখন B2B-first এবং B2C-enabled marketplace foundation-এর 
 | Returns/disputes foundation | সম্পন্ন | Delivered order থেকে buyer return request, vendor/admin response এবং refund-state boundary |
 | Notifications foundation | সম্পন্ন | Order, courier ও return events থেকে buyer/vendor in-app notifications |
 | Admin reconciliation | সম্পন্ন | Server-recorded payment transactions admin-only read view |
+| Buyer conversion UX | সম্পন্ন | B2B/B2C cart context, supplier/stock signals, SKU/supplier search ও quote expiry copy |
+| Notification inbox | সম্পন্ন | Home unread badge, dedicated inbox এবং owner-scoped read marking |
+| Return/dispute UX | সম্পন্ন | Buyer return request, vendor response queue ও admin resolution controls |
+| Buyer/vendor UX polish | সম্পন্ন | Notification inbox, unread badge, supplier/stock context, Bengali order/payment labels |
+| Courier event contract | সম্পন্ন | Service-only normalized courier webhook, event idempotency ও buyer-safe tracking note |
 | Real Bkash gateway/webhook | পরবর্তী ধাপ | Provider credentials, callback contract ও server endpoint প্রয়োজন |
 | Delivery carrier integration | পরবর্তী ধাপ | Carrier/API নির্বাচন এবং carrier-specific tracking workflow প্রয়োজন |
 
@@ -33,7 +38,7 @@ Returns/disputes foundation-এ delivered order-এর buyer return request, ven
 
 ## Flutter Android UX
 
-Buyer Profile-এ recent updates, order card tracking timeline এবং delivered order-এর Return request action আছে। Vendor Center-এ next status, shipment-এর আগে cancellation action এবং shipped করার সময় courier/tracking details দেওয়ার dialog আছে। Courier metadata buyer-safe timeline event ও notification হিসেবে দেখা যায়। Checkout success state server-returned payment status দেখায়। Bkash নির্বাচন করলে UI স্পষ্টভাবে জানায় যে gateway confirmation এখনও চালু হয়নি এবং order paid হিসেবে গণ্য হবে না। Admin Center route `/admin/moderation`-এ vendor/product moderation ও payment reconciliation আছে; route-এ ঢুকলেও backend `is_admin()` false হলে moderation data দেখানো হয় না।
+Buyer Profile-এ recent updates, order card tracking timeline এবং delivered order-এর Return request action আছে। Home app bar-এ unread notification badge এবং dedicated notification inbox আছে। Product cards/search/catalog views supplier name, SKU ও buyer-safe available quantity ব্যবহার করে; Cart-এ B2B/B2C context এবং server revalidation notice দেখায়। Vendor Center-এ next status, shipment-এর আগে cancellation action, shipped করার সময় courier/tracking details এবং return response queue আছে। Courier metadata buyer-safe timeline event ও notification হিসেবে দেখা যায়। Checkout success state server-returned payment status দেখায়। Bkash নির্বাচন করলে UI স্পষ্টভাবে জানায় যে gateway confirmation এখনও চালু হয়নি এবং order paid হিসেবে গণ্য হবে না। Admin Center route `/admin/moderation`-এ vendor/product moderation, payment reconciliation এবং returns/disputes resolution আছে; route-এ ঢুকলেও backend `is_admin()` false হলে moderation data দেখানো হয় না।
 
 ## নিরাপত্তা সীমা
 
@@ -61,4 +66,4 @@ flutter build apk --debug
 
 ## পরবর্তী বাস্তব milestone
 
-পরবর্তী business-critical ধাপ হলো একটি নির্দিষ্ট Bangladesh payment provider নির্বাচন করে sandbox payment flow তৈরি করা। Provider নির্বাচন না হওয়া পর্যন্ত কোনো secret, merchant credential বা callback URL codebase-এ যোগ করা উচিত নয়। এরপর provider-specific webhook signature verification, callback endpoint এবং payment reconciliation যোগ করা যাবে। Delivery carrier integration ও admin dispute view তার পরের ধাপ।
+পরবর্তী business-critical ধাপ হলো একটি নির্দিষ্ট Bangladesh payment provider নির্বাচন করে sandbox payment flow তৈরি করা। Provider নির্বাচন না হওয়া পর্যন্ত কোনো secret, merchant credential বা callback URL codebase-এ যোগ করা উচিত নয়। এরপর provider-specific webhook signature verification, callback endpoint এবং payment reconciliation যোগ করা যাবে। Delivery carrier integration ও admin dispute view-এর foundation এখন আছে; live carrier token, parcel booking এবং provider-specific callback adapter এখনো configuration-dependent।

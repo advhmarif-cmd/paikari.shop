@@ -51,6 +51,10 @@ class VendorDashboardScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           await ref.refresh(myLocalProductsProvider.future);
+          ref.invalidate(vendorOrdersProvider);
+          ref.invalidate(vendorInquiriesProvider);
+          ref.invalidate(vendorQuotationsProvider);
+          ref.invalidate(vendorReturnRequestsProvider);
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -436,7 +440,7 @@ class _VendorOrderTile extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: const CircleAvatar(child: Icon(Icons.local_shipping_outlined)),
         title: Text(order.vendorStoreName, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${order.items.length} line · ৳${order.totalAmount.toStringAsFixed(0)} · ${order.status}${order.trackingNumber == null ? '' : '\\n${order.courierName ?? 'Courier'}: ${order.trackingNumber}'}'),
+        subtitle: Text('${order.items.length} line · ৳${order.totalAmount.toStringAsFixed(0)} · ${order.status}${order.trackingNumber == null ? '' : '\\n${order.courierName ?? order.courierProvider ?? 'Courier'}: ${order.trackingNumber}${order.courierStatus == null ? '' : ' · ${order.courierStatus}'}'}'),
         trailing: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

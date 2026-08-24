@@ -97,7 +97,15 @@ class ProductCard extends StatelessWidget {
                       height: 1.25,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
+                  if (product.vendorName != null && product.vendorName!.trim().isNotEmpty)
+                    Text(
+                      product.vendorName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline, fontWeight: FontWeight.w700),
+                    ),
+                  const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -122,11 +130,11 @@ class ProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    wholesalePrice == null
+                    '${wholesalePrice == null
                         ? (businessMode && product.moq > 1
                             ? 'MOQ: ${product.moq} ${product.unitLabel}'
                             : (isShared ? 'Origen shared product' : 'খুচরা মূল্য'))
-                        : 'MOQ: ${product.moq} ${product.unitLabel} · পাইকারি',
+                        : 'MOQ: ${product.moq} ${product.unitLabel} · পাইকারি'}${product.stockQuantity == null ? '' : ' · Stock ${product.availableQuantity}'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(

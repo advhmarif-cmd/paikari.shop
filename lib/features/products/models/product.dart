@@ -43,8 +43,11 @@ class Product {
   final bool isNegotiable;
   final String approvalStatus;
   final String? vendorId;
+  final String? vendorName;
+  final int? availableQuantitySnapshot;
 
   int get availableQuantity {
+    if (availableQuantitySnapshot != null) return availableQuantitySnapshot!;
     if (stockQuantity == null) return 0;
     final remaining = stockQuantity! - reservedQuantity;
     return remaining < 0 ? 0 : remaining;
@@ -75,6 +78,8 @@ class Product {
     this.isNegotiable = false,
     this.approvalStatus = 'approved',
     this.vendorId,
+    this.vendorName,
+    this.availableQuantitySnapshot,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -86,8 +91,11 @@ class Product {
     final rawAvailable = json['isAvailable'] ?? json['is_active'];
     final stockQuantity = (json['stock_quantity'] as num?)?.toInt();
     final reservedQuantity = (json['reserved_quantity'] as num?)?.toInt() ?? 0;
+    final availableQuantitySnapshot = (json['available_quantity'] as num?)?.toInt();
     final allowBackorder = json['allow_backorder'] as bool? ?? false;
-    final hasStock = stockQuantity == null || stockQuantity - reservedQuantity > 0 || allowBackorder;
+    final hasStock = availableQuantitySnapshot != null
+        ? availableQuantitySnapshot > 0 || allowBackorder
+        : stockQuantity == null || stockQuantity - reservedQuantity > 0 || allowBackorder;
 
     return Product(
       id: json['id'] as String,
@@ -112,6 +120,8 @@ class Product {
       isNegotiable: json['is_negotiable'] as bool? ?? false,
       approvalStatus: (json['approval_status'] ?? 'approved') as String,
       vendorId: (json['owner_id'] ?? json['vendor_id']) as String?,
+      vendorName: (json['vendor_store_name'] ?? json['vendor_name']) as String?,
+      availableQuantitySnapshot: availableQuantitySnapshot,
     );
   }
 

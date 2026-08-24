@@ -122,7 +122,7 @@ class ProfileScreen extends ConsumerWidget {
                             title: Text('অর্ডার #${order.id.substring(order.id.length - 6)}', style: const TextStyle(fontWeight: FontWeight.w800)),
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 5),
-                              child: Text('${l10n.orderDate}: ${DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt)}\n${l10n.status}: ${order.status.name.toUpperCase()}\nPayment: ${order.paymentStatus.toUpperCase()}'),
+                              child: Text('${l10n.orderDate}: ${DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt)}\n${l10n.status}: ${_orderStatusLabel(order.status)}\nPayment: ${_paymentStatusLabel(order.paymentStatus)}'),
                             ),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -494,5 +494,37 @@ class _NotificationTile extends ConsumerWidget {
             : null,
       ),
     );
+  }
+}
+
+String _orderStatusLabel(OrderStatus status) {
+  switch (status) {
+    case OrderStatus.pending:
+      return 'অপেক্ষমাণ';
+    case OrderStatus.confirmed:
+      return 'নিশ্চিত';
+    case OrderStatus.processing:
+      return 'প্রস্তুত হচ্ছে';
+    case OrderStatus.shipped:
+      return 'পাঠানো হয়েছে';
+    case OrderStatus.delivered:
+      return 'ডেলিভারড';
+    case OrderStatus.cancelled:
+      return 'বাতিল';
+  }
+}
+
+String _paymentStatusLabel(String status) {
+  switch (status.toLowerCase()) {
+    case 'paid':
+      return 'পরিশোধিত';
+    case 'pending':
+      return 'অপেক্ষমাণ';
+    case 'failed':
+      return 'ব্যর্থ';
+    case 'refunded':
+      return 'ফেরত দেওয়া হয়েছে';
+    default:
+      return 'COD / পরিশোধ বাকি';
   }
 }
