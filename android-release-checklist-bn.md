@@ -55,6 +55,10 @@ Supabase Auth user-এর `app_metadata.role` সত্যিই `admin` না 
 
 Profile থেকে `নীতি ও সাহায্য` screen খুলবে এবং Privacy, Terms, Return/Refund ও Support sections readable থাকবে। Policy copy-কে production launch-এর আগে business owner এবং applicable legal reviewer approve করতে হবে। Verified support phone, email বা helpdesk URL configure না করা পর্যন্ত app-এ কোনো placeholder contact-কে official support হিসেবে দেখানো যাবে না।
 
+## Live security verification
+
+Release-এর আগে Supabase security advisor এবং direct privilege audit পুনরায় চালাতে হবে। Anonymous role-এর কোনো marketplace RPC execute privilege থাকা যাবে না। Buyer/vendor/admin RPC কেবল `authenticated` role-এর জন্য থাকবে এবং internal trigger helper ও payment confirmation RPC client role থেকে অপ্রাপ্য থাকবে। `b2c_products` ও `b2b_products` view-এ `security_invoker=true` থাকতে হবে, যাতে base-table RLS requesting role অনুযায়ী কার্যকর হয়।
+
 ## Release blockers
 
 Flutter analyzer/test/build চালানো না গেলে release অনুমোদন করা যাবে না। কোনো authenticated user অন্য buyer-এর order, payment transaction, quote session বা tracking history পড়তে পারলে release বন্ধ করতে হবে। Client request-এ trusted price, total, vendor ownership, stock বা payment confirmation পাঠানো হলে implementation পুনরায় review করতে হবে।

@@ -67,3 +67,13 @@ flutter build apk --debug
 ## পরবর্তী বাস্তব milestone
 
 পরবর্তী business-critical ধাপ হলো একটি নির্দিষ্ট Bangladesh payment provider নির্বাচন করে sandbox payment flow তৈরি করা। Provider নির্বাচন না হওয়া পর্যন্ত কোনো secret, merchant credential বা callback URL codebase-এ যোগ করা উচিত নয়। এরপর provider-specific webhook signature verification, callback endpoint এবং payment reconciliation যোগ করা যাবে। Delivery carrier integration ও admin dispute view-এর foundation এখন আছে; live carrier token, parcel booking এবং provider-specific callback adapter এখনো configuration-dependent।
+
+## Final release-hardening update — 24 August 2026
+
+শেষ release-hardening pass-এ `sync-origen-catalog` Edge Function-এ anonymous authenticated-user fallback বন্ধ করে কেবল valid `ORIGEN_SYNC_SECRET` অথবা `auth.jwt()->app_metadata.role = 'admin'` JWT path রাখা হয়েছে। Function version 2 active এবং JWT verification enabled।
+
+Live Supabase security-advisor audit-এ পাওয়া anonymous RPC execution exposure remediate করা হয়েছে। Buyer/vendor/admin RPC-গুলো এখন কেবল `authenticated` role-এর জন্য executable; internal trigger-only helpers এবং `confirm_order_payment` client roles থেকে revoked। `b2c_products` এবং `b2b_products` view-এ `security_invoker=true` সেট করা হয়েছে, ফলে view query-তে base-table RLS caller role অনুযায়ী কার্যকর হবে। Direct live verification-এ anonymous `place_order_group_from_cart` ও `rls_auto_enable` execution false এবং authenticated order RPC execution true পাওয়া গেছে।
+
+Live-এ প্রয়োগ করা migration দুটি হলো `least_privilege_rpc_views` এবং `internal_rpc_privilege_cleanup`। Source repository-তে এগুলো যথাক্রমে `20260824132000_least_privilege_rpc_views.sql` এবং `20260824133000_internal_rpc_privilege_cleanup.sql` হিসেবে রাখা হয়েছে। শেষ code push `986dbdc`।
+
+Security advisor-এ অবশিষ্ট authenticated SECURITY DEFINER warnings ইচ্ছাকৃত: এগুলো client-facing RPC হলেও প্রতিটি function-এর ভিতরে buyer/vendor/admin ownership বা role validation আছে, আর server-authoritative transaction ও RLS enforcement বজায় রাখতে SECURITY DEFINER প্রয়োজন। `shipping_settings` এবং `stock_movements`-এর RLS-without-policy notices-ও intentional private tables; client roles-এর access নেই।
