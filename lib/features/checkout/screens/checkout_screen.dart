@@ -87,6 +87,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onChanged: (value) => setState(() => _selectedPaymentMethod = value),
                       cashLabel: l10n.cashOnDelivery,
                     ),
+                    if (_selectedPaymentMethod == 'Bkash') ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.09), borderRadius: BorderRadius.circular(12)),
+                        child: const Text('Bkash payment confirmation এখন server-side pending থাকবে। বাস্তব payment gateway confirmation না হওয়া পর্যন্ত order paid হিসেবে ধরা হবে না।', style: TextStyle(fontSize: 12, height: 1.4)),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     _OrderSummary(totalAmount: cartState.totalAmount),
                     const SizedBox(height: 22),
@@ -181,7 +190,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         icon: const Icon(Icons.check_circle, color: Colors.green, size: 60),
         title: const Text('অর্ডার সফল হয়েছে', textAlign: TextAlign.center),
         content: Text(
-          'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে।\n\nসার্ভার-নির্ধারিত মোট: ৳${order.totalAmount.toStringAsFixed(0)}',
+          'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে।\n\nসার্ভার-নির্ধারিত মোট: ৳${order.totalAmount.toStringAsFixed(0)}\nPayment status: ${order.paymentStatus.toUpperCase()}',
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 16, height: 1.45),
         ),

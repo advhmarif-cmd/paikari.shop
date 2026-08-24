@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:paikari_shop/features/cart/models/cart_item.dart';
 import 'package:paikari_shop/features/checkout/models/address.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart' as app_order;
+import 'package:paikari_shop/features/checkout/models/order_status_event.dart';
 
 class SupabaseOrderRepository {
   SupabaseOrderRepository({SupabaseClient? client})
@@ -82,6 +83,17 @@ class SupabaseOrderRepository {
         .stream(primaryKey: ['id'])
         .eq('vendor_id', user.id)
         .order('created_at', ascending: false);
+  }
+
+  Future<List<OrderStatusEvent>> getOrderStatusEvents(String orderGroupId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('লগইন করা প্রয়োজন');
+    final rows = await _supabase
+        .from('order_status_events')
+        .select()
+        .eq('order_group_id', orderGroupId)
+        .order('created_at', ascending: true);
+    return rows.map((row) => OrderStatusEvent.fromJson(Map<String, dynamic>.from(row))).toList();
   }
 
   Stream<List<app_order.Order>> getOrders(String userId) {

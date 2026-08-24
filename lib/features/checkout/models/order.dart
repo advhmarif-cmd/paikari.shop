@@ -10,6 +10,9 @@ class Order {
   final double totalAmount;
   final Address shippingAddress;
   final String paymentMethod;
+  final String paymentStatus;
+  final String? paymentReference;
+  final DateTime? paidAt;
   final DateTime createdAt;
   final OrderStatus status;
   final String buyerMode;
@@ -21,6 +24,9 @@ class Order {
     required this.totalAmount,
     required this.shippingAddress,
     required this.paymentMethod,
+    this.paymentStatus = 'unpaid',
+    this.paymentReference,
+    this.paidAt,
     required this.createdAt,
     this.status = OrderStatus.pending,
     this.buyerMode = 'b2c',
@@ -64,6 +70,9 @@ class Order {
       totalAmount: (data['total_amount'] as num?)?.toDouble() ?? 0,
       shippingAddress: Address.fromJson(rawAddress),
       paymentMethod: data['payment_method'] as String? ?? 'Cash on Delivery',
+      paymentStatus: data['payment_status'] as String? ?? 'unpaid',
+      paymentReference: data['payment_reference'] as String?,
+      paidAt: DateTime.tryParse(data['paid_at'] as String? ?? ''),
       createdAt: DateTime.tryParse(data['created_at'] as String? ?? '') ?? DateTime.now(),
       status: OrderStatus.values.firstWhere(
         (status) => status.name == rawStatus,

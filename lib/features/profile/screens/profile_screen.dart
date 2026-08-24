@@ -11,6 +11,7 @@ import 'package:paikari_shop/features/quotations/repositories/quotation_reposito
 import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.dart';
 import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart';
+import 'package:paikari_shop/features/checkout/models/order_status_event.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
@@ -103,11 +104,12 @@ class ProfileScreen extends ConsumerWidget {
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
                           child: ListTile(
+                            onTap: order.orderGroupId == null ? null : () => _showOrderTracking(context, ref, order),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                             title: Text('অর্ডার #${order.id.substring(order.id.length - 6)}', style: const TextStyle(fontWeight: FontWeight.w800)),
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 5),
-                              child: Text('${l10n.orderDate}: ${DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt)}\n${l10n.status}: ${order.status.name.toUpperCase()}'),
+                              child: Text('${l10n.orderDate}: ${DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt)}\n${l10n.status}: ${order.status.name.toUpperCase()}\nPayment: ${order.paymentStatus.toUpperCase()}'),
                             ),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -317,6 +319,78 @@ class _EmptyOrders extends StatelessWidget {
           Icon(Icons.receipt_long_outlined, size: 42, color: Colors.grey),
           SizedBox(height: 8),
           Text('কোনো অর্ডার পাওয়া যায়নি', style: TextStyle(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _showOrderTracking(BuildContext context, WidgetRef ref, Order order) async {
+  final groupId = order.orderGroupId;
+  if (groupId == null) return;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+        child: FutureBuilder<List<OrderStatusEvent>>(
+          future: ref.read(orderRepositoryProvider).getOrderStatusEvents(groupId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+            }
+            if (snapshot.hasError) {
+              return SizedBox(height: 160, child: Center(child: Text('Tracking load করা যায়নি: ${snapshot.error}')));
+            }
+            final events = snapshot.data ?? const <OrderStatusEvent>[];
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Order #${order.id.substring(order.id.length - 6)} tracking', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 14),
+                if (events.isEmpty)
+                  const Text('এখনও status history তৈরি হয়নি।')
+                else
+                  ...events.map((event) => _OrderStatusEventTile(event: event)),
+              ],
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+class _OrderStatusEventTile extends StatelessWidget {
+  final OrderStatusEvent event;
+
+  const _OrderStatusEventTile({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final isClosed = event.newStatus == 'delivered' || event.newStatus == 'cancelled';
+    final color = isClosed ? (event.newStatus == 'delivered' ? Colors.green : Colors.red) : PaikariTheme.primaryColor;
+    final label = event.newStatus[0].toUpperCase() + event.newStatus.substring(1);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(isClosed ? (event.newStatus == 'delivered' ? Icons.check_circle : Icons.cancel) : Icons.radio_button_checked, color: color, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(DateFormat('dd MMM yyyy, hh:mm a').format(event.createdAt.toLocal()), style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                if (event.note != null && event.note!.trim().isNotEmpty) Text(event.note!, style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
+              ],
+            ),
+          ),
         ],
       ),
     );

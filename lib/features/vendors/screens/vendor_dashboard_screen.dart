@@ -89,7 +89,7 @@ class VendorDashboardScreen extends ConsumerWidget {
               error: (error, stack) => Text('Order load করা যায়নি: $error'),
               data: (orders) => orders.isEmpty
                   ? const Text('এখনও কোনো vendor order নেই', style: TextStyle(color: Colors.grey))
-                  : Column(children: orders.map((order) => _VendorOrderTile(order: order, onAdvance: () => _advanceVendorOrder(context, ref, order))).toList()),
+                  : Column(children: orders.map((order) => _VendorOrderTile(order: order, onAdvance: () => _advanceVendorOrder(context, ref, order), onCancel: () => _cancelVendorOrder(context, ref, order))).toList()),
             ),
             const SizedBox(height: 24),
             const Text('Quotation requests', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
@@ -174,6 +174,29 @@ Future<void> _advanceVendorOrder(BuildContext context, WidgetRef ref, VendorOrde
   }
 }
 
+Future<void> _cancelVendorOrder(BuildContext context, WidgetRef ref, VendorOrder order) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Vendor order cancel করবেন?'),
+      content: const Text('Shipment-এর আগে cancel করলে reserved stock release হবে।'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('না')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('হ্যাঁ, cancel করুন')),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  try {
+    await ref.read(orderRepositoryProvider).updateVendorOrderStatus(vendorOrderId: order.id, status: 'cancelled');
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vendor order cancel হয়েছে এবং stock release হয়েছে'), behavior: SnackBarBehavior.floating));
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vendor order cancel করা যায়নি: $error'), behavior: SnackBarBehavior.floating));
+  }
+}
+
 Future<void> _respondToQuote(BuildContext context, WidgetRef ref, QuotationRequest quote) async {
   final price = TextEditingController();
   final quantity = TextEditingController(text: quote.requestedQuantity.toString());
@@ -251,12 +274,14 @@ class _VendorQuoteTile extends StatelessWidget {
 class _VendorOrderTile extends StatelessWidget {
   final VendorOrder order;
   final VoidCallback onAdvance;
+  final VoidCallback onCancel;
 
-  const _VendorOrderTile({required this.order, required this.onAdvance});
+  const _VendorOrderTile({required this.order, required this.onAdvance, required this.onCancel});
 
   @override
   Widget build(BuildContext context) {
     final canAdvance = {'pending', 'confirmed', 'processing', 'shipped'}.contains(order.status);
+    final canCancel = {'pending', 'confirmed', 'processing'}.contains(order.status);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
@@ -266,7 +291,13 @@ class _VendorOrderTile extends StatelessWidget {
         leading: const CircleAvatar(child: Icon(Icons.local_shipping_outlined)),
         title: Text(order.vendorStoreName, style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text('${order.items.length} line · ৳${order.totalAmount.toStringAsFixed(0)} · ${order.status}'),
-        trailing: canAdvance ? TextButton(onPressed: onAdvance, child: const Text('Next status')) : null,
+        trailing: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (canAdvance) TextButton(onPressed: onAdvance, child: const Text('Next status')),
+            if (canCancel) TextButton(onPressed: onCancel, child: const Text('Cancel', style: TextStyle(color: Colors.red))),
+          ],
+        ),
       ),
     );
   }

@@ -15,6 +15,7 @@ import 'package:paikari_shop/features/products/widgets/product_card.dart';
 import 'package:paikari_shop/features/products/providers/product_provider.dart';
 import 'package:paikari_shop/features/checkout/screens/checkout_screen.dart';
 import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.dart';
+import 'package:paikari_shop/features/admin/screens/admin_moderation_screen.dart';
 import 'package:paikari_shop/features/profile/screens/profile_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_onboarding_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_dashboard_screen.dart';
@@ -77,6 +78,7 @@ class PaikariApp extends StatelessWidget {
         '/vendor/dashboard': (context) => const VendorDashboardScreen(),
         '/vendor/products/new': (context) => const VendorProductFormScreen(),
         '/buyer/business': (context) => const BusinessBuyerScreen(),
+        '/admin/moderation': (context) => const AdminModerationScreen(),
       },
     );
   }
