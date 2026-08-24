@@ -7,6 +7,11 @@ class VendorOrder {
   final double deliveryCharge;
   final double totalAmount;
   final String status;
+  final String? courierName;
+  final String? trackingNumber;
+  final String? trackingUrl;
+  final DateTime? shippedAt;
+  final DateTime? deliveredAt;
   final List<Map<String, dynamic>> items;
   final DateTime createdAt;
 
@@ -18,6 +23,11 @@ class VendorOrder {
     required this.deliveryCharge,
     required this.totalAmount,
     required this.status,
+    this.courierName,
+    this.trackingNumber,
+    this.trackingUrl,
+    this.shippedAt,
+    this.deliveredAt,
     required this.items,
     required this.createdAt,
     this.vendorId,
@@ -34,6 +44,11 @@ class VendorOrder {
       deliveryCharge: (json['delivery_charge'] as num?)?.toDouble() ?? 0,
       totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0,
       status: (json['status'] ?? 'pending') as String,
+      courierName: json['courier_name'] as String?,
+      trackingNumber: json['tracking_number'] as String?,
+      trackingUrl: json['tracking_url'] as String?,
+      shippedAt: DateTime.tryParse(json['shipped_at'] as String? ?? ''),
+      deliveredAt: DateTime.tryParse(json['delivered_at'] as String? ?? ''),
       items: rawItems.map((item) => Map<String, dynamic>.from(item as Map)).toList(),
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
     );

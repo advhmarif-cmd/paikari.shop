@@ -75,6 +75,24 @@ class SupabaseOrderRepository {
     });
   }
 
+  Future<void> updateVendorOrderFulfillment({
+    required String vendorOrderId,
+    required String status,
+    String? courierName,
+    String? trackingNumber,
+    String? trackingUrl,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('লগইন করা প্রয়োজন');
+    await _supabase.rpc('update_vendor_order_fulfillment', params: {
+      'p_vendor_order_id': vendorOrderId,
+      'p_status': status,
+      'p_courier_name': courierName,
+      'p_tracking_number': trackingNumber,
+      'p_tracking_url': trackingUrl,
+    });
+  }
+
   Stream<List<Map<String, dynamic>>> watchVendorOrders() {
     final user = _supabase.auth.currentUser;
     if (user == null) return const Stream.empty();

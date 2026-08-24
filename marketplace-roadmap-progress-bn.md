@@ -13,20 +13,22 @@ Paikari এখন B2B-first এবং B2C-enabled marketplace foundation-এর 
 | Order status tracking | সম্পন্ন | Status event history, buyer timeline ও vendor fulfillment actions |
 | Payment foundation | সম্পন্ন | COD/Bkash state, payment transaction audit trail, server-only confirmation RPC |
 | Admin moderation foundation | সম্পন্ন | JWT app_metadata-ভিত্তিক vendor/product approval RPC ও Admin Center |
+| Payment webhook idempotency | সম্পন্ন | Provider event ID unique handling ও illegal payment regression block |
+| Delivery tracking foundation | সম্পন্ন | Courier, tracking number, tracking URL এবং shipped/delivered timestamps |
 | Real Bkash gateway/webhook | পরবর্তী ধাপ | Provider credentials, callback contract ও server endpoint প্রয়োজন |
-| Delivery carrier integration | পরবর্তী ধাপ | Carrier/API নির্বাচন এবং tracking-number workflow প্রয়োজন |
+| Delivery carrier integration | পরবর্তী ধাপ | Carrier/API নির্বাচন এবং carrier-specific tracking workflow প্রয়োজন |
 
 ## সম্পন্ন server-side controls
 
 Order status-এর জন্য `pending → confirmed → processing → shipped → delivered` ধারাবাহিকতা enforce করা হয়েছে। Shipment-এর পরে vendor cancellation নিষিদ্ধ; pending, confirmed বা processing পর্যায়ে vendor cancellation করলে reserved stock release হয়। Buyer tracking-এর জন্য `order_status_events` table participant-only read policy ব্যবহার করে।
 
-Payment foundation-এ `order_groups` ও `order_records`-এ server-owned `payment_status`, `payment_reference` এবং `paid_at` যোগ হয়েছে। `payment_transactions` audit table-এ order amount, method, state, provider reference ও confirmation time রাখা হয়। `confirm_order_payment` client-authenticated execution থেকে বন্ধ; এটি কেবল trusted Supabase `service_role`-এর জন্য executable রাখা হয়েছে, যাতে ভবিষ্যৎ gateway webhook server-side confirmation করতে পারে।
+Payment foundation-এ `order_groups` ও `order_records`-এ server-owned `payment_status`, `payment_reference` এবং `paid_at` যোগ হয়েছে। `payment_transactions` audit table-এ order amount, method, state, provider reference, provider event ID এবং confirmation time রাখা হয়। `confirm_order_payment` client-authenticated execution থেকে বন্ধ; এটি কেবল trusted Supabase `service_role`-এর জন্য executable রাখা হয়েছে। একই `provider + event_id` দ্বিতীয়বার এলে idempotentভাবে আগের order state ফেরত আসে, এবং paid/refunded state-এ অবৈধ regression বন্ধ থাকে।
 
 Admin moderation-এ কোনো `public.users` role lookup ব্যবহার করা হয়নি। `is_admin()` Supabase JWT-এর `app_metadata.role = admin` দেখে। Vendor verification এবং Paikari local product approval status পরিবর্তনের জন্য আলাদা server-authorized RPC ব্যবহার হয়েছে। Origen master rows admin local-product approval RPC দ্বারা পরিবর্তনযোগ্য নয়।
 
 ## Flutter Android UX
 
-Buyer Profile-এ order card tap করলে tracking timeline খোলে। Vendor Center-এ next status এবং shipment-এর আগের cancellation action আছে। Checkout success state server-returned payment status দেখায়। Bkash নির্বাচন করলে UI স্পষ্টভাবে জানায় যে gateway confirmation এখনও চালু হয়নি এবং order paid হিসেবে গণ্য হবে না। Admin Center route `/admin/moderation` রাখা হয়েছে; route-এ ঢুকলেও backend `is_admin()` false হলে moderation data দেখানো হয় না।
+Buyer Profile-এ order card tap করলে tracking timeline খোলে। Vendor Center-এ next status, shipment-এর আগে cancellation action এবং shipped করার সময় courier/tracking details দেওয়ার dialog আছে। Courier metadata buyer-safe timeline event হিসেবে দেখা যায়। Checkout success state server-returned payment status দেখায়। Bkash নির্বাচন করলে UI স্পষ্টভাবে জানায় যে gateway confirmation এখনও চালু হয়নি এবং order paid হিসেবে গণ্য হবে না। Admin Center route `/admin/moderation` রাখা হয়েছে; route-এ ঢুকলেও backend `is_admin()` false হলে moderation data দেখানো হয় না।
 
 ## নিরাপত্তা সীমা
 
@@ -54,4 +56,4 @@ flutter build apk --debug
 
 ## পরবর্তী বাস্তব milestone
 
-পরবর্তী business-critical ধাপ হলো একটি নির্দিষ্ট Bangladesh payment provider নির্বাচন করে sandbox payment flow তৈরি করা। Provider নির্বাচন না হওয়া পর্যন্ত কোনো secret, merchant credential বা callback URL codebase-এ যোগ করা উচিত নয়। এরপর delivery tracking number, buyer/vendor notification-ready events এবং admin dispute view যোগ করা যাবে।
+পরবর্তী business-critical ধাপ হলো একটি নির্দিষ্ট Bangladesh payment provider নির্বাচন করে sandbox payment flow তৈরি করা। Provider নির্বাচন না হওয়া পর্যন্ত কোনো secret, merchant credential বা callback URL codebase-এ যোগ করা উচিত নয়। এরপর provider-specific webhook signature verification, callback endpoint এবং payment reconciliation যোগ করা যাবে। Delivery carrier integration ও admin dispute view তার পরের ধাপ।

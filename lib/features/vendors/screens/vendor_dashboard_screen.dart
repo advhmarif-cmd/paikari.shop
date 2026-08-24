@@ -164,14 +164,77 @@ Future<void> _advanceVendorOrder(BuildContext context, WidgetRef ref, VendorOrde
   };
   final next = nextStatus[order.status];
   if (next == null) return;
+  Map<String, String?>? shipment;
+  if (next == 'shipped') {
+    shipment = await _collectShipmentDetails(context);
+    if (shipment == null) return;
+  }
   try {
-    await ref.read(orderRepositoryProvider).updateVendorOrderStatus(vendorOrderId: order.id, status: next);
+    await ref.read(orderRepositoryProvider).updateVendorOrderFulfillment(
+          vendorOrderId: order.id,
+          status: next,
+          courierName: shipment?['courier'],
+          trackingNumber: shipment?['trackingNumber'],
+          trackingUrl: shipment?['trackingUrl'],
+        );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order status $next হয়েছে'), behavior: SnackBarBehavior.floating));
   } catch (error) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status update করা যায়নি: $error'), behavior: SnackBarBehavior.floating));
   }
+}
+
+Future<Map<String, String?>?> _collectShipmentDetails(BuildContext context) async {
+  final courier = TextEditingController();
+  final trackingNumber = TextEditingController();
+  final trackingUrl = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  final result = await showDialog<Map<String, String?>>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Shipment details দিন'),
+      content: Form(
+        key: formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(controller: courier, decoration: const InputDecoration(labelText: 'Courier name')),
+              TextFormField(controller: trackingNumber, decoration: const InputDecoration(labelText: 'Tracking number')),
+              TextFormField(
+                controller: trackingUrl,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(labelText: 'Tracking URL (optional)'),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  return text.isEmpty || text.startsWith('http://') || text.startsWith('https://') ? null : 'http:// বা https:// URL দিন';
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('বাতিল')),
+        FilledButton(
+          onPressed: () {
+            if (!formKey.currentState!.validate()) return;
+            Navigator.pop(dialogContext, {
+              'courier': courier.text.trim().isEmpty ? null : courier.text.trim(),
+              'trackingNumber': trackingNumber.text.trim().isEmpty ? null : trackingNumber.text.trim(),
+              'trackingUrl': trackingUrl.text.trim().isEmpty ? null : trackingUrl.text.trim(),
+            });
+          },
+          child: const Text('Shipment save করুন'),
+        ),
+      ],
+    ),
+  );
+  courier.dispose();
+  trackingNumber.dispose();
+  trackingUrl.dispose();
+  return result;
 }
 
 Future<void> _cancelVendorOrder(BuildContext context, WidgetRef ref, VendorOrder order) async {
@@ -290,7 +353,7 @@ class _VendorOrderTile extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: const CircleAvatar(child: Icon(Icons.local_shipping_outlined)),
         title: Text(order.vendorStoreName, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${order.items.length} line · ৳${order.totalAmount.toStringAsFixed(0)} · ${order.status}'),
+        subtitle: Text('${order.items.length} line · ৳${order.totalAmount.toStringAsFixed(0)} · ${order.status}${order.trackingNumber == null ? '' : '\\n${order.courierName ?? 'Courier'}: ${order.trackingNumber}'}'),
         trailing: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
