@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:paikari_shop/features/quotations/models/quotation_request.dart';
+import 'package:paikari_shop/features/quotations/models/quote_checkout_session.dart';
 
 class QuotationRepository {
   QuotationRepository({SupabaseClient? client}) : _supabase = client ?? Supabase.instance.client;
@@ -44,6 +45,12 @@ class QuotationRepository {
   Future<QuotationRequest> accept(String quotationId) async {
     final response = await _supabase.rpc('accept_quotation', params: {'p_quotation_id': quotationId});
     return QuotationRequest.fromJson(Map<String, dynamic>.from(response as Map));
+  }
+
+  Future<QuoteCheckoutSession?> getCheckoutSession(String sessionId) async {
+    final response = await _supabase.from('quote_checkout_sessions').select().eq('id', sessionId).maybeSingle();
+    if (response == null) return null;
+    return QuoteCheckoutSession.fromJson(Map<String, dynamic>.from(response));
   }
 
   Stream<List<QuotationRequest>> watchBuyerQuotes() {

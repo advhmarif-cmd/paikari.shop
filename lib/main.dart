@@ -14,6 +14,7 @@ import 'package:paikari_shop/features/products/screens/product_detail_screen.dar
 import 'package:paikari_shop/features/products/widgets/product_card.dart';
 import 'package:paikari_shop/features/products/providers/product_provider.dart';
 import 'package:paikari_shop/features/checkout/screens/checkout_screen.dart';
+import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.dart';
 import 'package:paikari_shop/features/profile/screens/profile_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_onboarding_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_dashboard_screen.dart';
@@ -66,6 +67,11 @@ class PaikariApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/cart': (context) => const CartScreen(),
         '/checkout': (context) => const CheckoutScreen(),
+        '/quote/checkout': (context) {
+          final sessionId = ModalRoute.of(context)?.settings.arguments;
+          if (sessionId is! String || sessionId.isEmpty) return const ProfileScreen();
+          return QuoteCheckoutScreen(sessionId: sessionId);
+        },
         '/profile': (context) => const ProfileScreen(),
         '/vendor/onboarding': (context) => const VendorOnboardingScreen(),
         '/vendor/dashboard': (context) => const VendorDashboardScreen(),

@@ -44,6 +44,21 @@ class SupabaseOrderRepository {
     );
   }
 
+  Future<app_order.Order> checkoutAcceptedQuote({
+    required String checkoutSessionId,
+    required Map<String, dynamic> shippingAddress,
+    required String paymentMethod,
+  }) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('লগইন করা প্রয়োজন');
+    final response = await _supabase.rpc('checkout_accepted_quote', params: {
+      'p_checkout_session_id': checkoutSessionId,
+      'p_shipping_address': shippingAddress,
+      'p_payment_method': paymentMethod,
+    });
+    return app_order.Order.fromSupabase(Map<String, dynamic>.from(response as Map));
+  }
+
   Future<void> cancelOrderGroup(String orderGroupId) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('লগইন করা প্রয়োজন');

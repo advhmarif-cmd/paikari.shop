@@ -8,6 +8,7 @@ import 'package:paikari_shop/features/buyer/providers/business_buyer_provider.da
 import 'package:paikari_shop/features/quotations/models/quotation_request.dart';
 import 'package:paikari_shop/features/quotations/providers/quotation_provider.dart';
 import 'package:paikari_shop/features/quotations/repositories/quotation_repository.dart';
+import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.dart';
 import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
@@ -265,8 +266,12 @@ class _BusinessBuyerCard extends StatelessWidget {
 
 Future<void> _acceptQuote(BuildContext context, WidgetRef ref, QuotationRequest quote) async {
   try {
-    await ref.read(quotationRepositoryProvider).accept(quote.id);
+    final accepted = await ref.read(quotationRepositoryProvider).accept(quote.id);
     if (!context.mounted) return;
+    if (accepted.checkoutSessionId != null) {
+      await Navigator.pushNamed(context, '/quote/checkout', arguments: accepted.checkoutSessionId);
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quotation accepted হয়েছে'), behavior: SnackBarBehavior.floating));
   } catch (error) {
     if (!context.mounted) return;
@@ -282,7 +287,7 @@ class _BuyerQuoteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasQuote = quote.status == 'quoted' && quote.quotedUnitPrice != null;
+    final hasQuote = (quote.status == 'quoted' || quote.status == 'accepted') && quote.quotedUnitPrice != null && quote.checkoutSessionId != null;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
@@ -292,7 +297,7 @@ class _BuyerQuoteTile extends StatelessWidget {
         leading: const CircleAvatar(child: Icon(Icons.request_quote_outlined)),
         title: Text('${quote.requestedQuantity} units · ${quote.status}', style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text(hasQuote ? 'Vendor quote: ৳${quote.quotedUnitPrice!.toStringAsFixed(0)} / unit' : quote.message, maxLines: 2, overflow: TextOverflow.ellipsis),
-        trailing: hasQuote ? TextButton(onPressed: onAccept, child: const Text('Accept')) : null,
+        trailing: hasQuote ? TextButton(onPressed: onAccept, child: Text(quote.status == 'accepted' ? 'Order' : 'Accept')) : null,
       ),
     );
   }

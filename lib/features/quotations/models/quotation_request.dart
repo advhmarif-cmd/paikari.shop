@@ -13,6 +13,8 @@ class QuotationRequest {
   final String? vendorMessage;
   final DateTime? validUntil;
   final DateTime createdAt;
+  final String? checkoutSessionId;
+  final DateTime? acceptedAt;
 
   const QuotationRequest({
     required this.id,
@@ -29,6 +31,8 @@ class QuotationRequest {
     this.quotedUnitPrice,
     this.vendorMessage,
     this.validUntil,
+    this.checkoutSessionId,
+    this.acceptedAt,
   });
 
   factory QuotationRequest.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,8 @@ class QuotationRequest {
       vendorMessage: json['vendor_message'] as String?,
       validUntil: DateTime.tryParse(json['valid_until'] as String? ?? ''),
       createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      checkoutSessionId: json['checkout_session_id'] as String?,
+      acceptedAt: DateTime.tryParse(json['accepted_at'] as String? ?? ''),
     );
   }
 }
