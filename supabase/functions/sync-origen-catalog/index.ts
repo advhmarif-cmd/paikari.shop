@@ -47,6 +47,8 @@ Deno.serve(async (request) => {
     const accessToken = authHeader.slice("Bearer ".length);
     const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
     if (authError || !authData.user) return json({ error: "Invalid session" }, 401);
+    const appMetadata = authData.user.app_metadata as Record<string, unknown> | undefined;
+    if (appMetadata?.role !== "admin") return json({ error: "Admin access required" }, 403);
     triggeredBy = authData.user.id;
   }
 
