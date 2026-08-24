@@ -86,3 +86,7 @@ Live verification-এ `public.users`-এর RLS enabled এবং কেবল a
 
 ## Bangla QR payment boundary — 24 August 2026
 Bangla QR checkout method এখন cart এবং accepted-quote checkout উভয় flow-এ server-validated। `order_groups`, `order_records` এবং `payment_transactions`-এর allowlist-এ `Bangla QR` যোগ হয়েছে; initial payment state `pending` হয়। Acquiring bank/PSP callback বা trusted transaction-query ছাড়া order `paid` করা যাবে না। Merchant ID, provider API, callback signing এবং settlement credentials না থাকায় কোনো fake QR payload বা live gateway activation করা হয়নি।
+
+
+## Android UI polish pass — 24 August 2026
+Shared Material 3 theme-এ Bangla typography hierarchy, app bar, input fields, primary/secondary buttons, chips, dividers, list tiles, progress indicators এবং floating snackbars-এর consistent design tokens যোগ করা হয়েছে। Product card-এ screen-reader label ও tap hint যোগ হয়েছে; shimmer loading theme-aware হয়েছে; authenticated profile-load failure-এ clear retry state দেখানো হয়েছে। Checkout ও quote checkout-এ Bangla QR pending notice বজায় রেখে payment selection hierarchy consistent করা হয়েছে।

@@ -23,63 +23,131 @@ class ProductCard extends StatelessWidget {
         : null;
     final displayPrice = wholesalePrice ?? product.retailPrice;
     final isShared = product.source == 'origen';
+    final vendorLabel = product.vendorName?.trim();
+    final semanticLabel = vendorLabel == null || vendorLabel.isEmpty
+        ? product.name
+        : '${product.name} · $vendorLabel';
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: product.isAvailable ? onTap : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 1.08,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Hero(
-                    tag: 'product-${product.id}',
-                    child: ProductImage(
-                      url: product.imageUrl,
-                      fit: BoxFit.cover,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: _SourceBadge(isShared: isShared),
-                  ),
-                  if (!product.isAvailable)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'স্টক শেষ',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
+    return Semantics(
+      button: true,
+      enabled: product.isAvailable,
+      label: semanticLabel,
+      hint: product.isAvailable ? 'বিস্তারিত দেখতে ট্যাপ করুন' : 'স্টক শেষ',
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        elevation: 1,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          onTap: product.isAvailable ? onTap : null,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 1.08,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Hero(
+                      tag: 'product-${product.id}',
+                      child: ProductImage(
+                        url: product.imageUrl,
+                        fit: BoxFit.cover,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
                         ),
                       ),
                     ),
-                ],
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: _SourceBadge(isShared: isShared),
+                    ),
+                    if (!product.isAvailable)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'স্টক শেষ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (product.category.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (product.category.trim().isNotEmpty)
+                      Text(
+                        product.category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
                     Text(
-                      product.category,
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    if (product.vendorName != null &&
+                        product.vendorName!.trim().isNotEmpty)
+                      Text(
+                        product.vendorName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (wholesalePrice != null) ...[
+                          Text(
+                            '৳${product.retailPrice.toStringAsFixed(0)}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.outline,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          '৳${displayPrice.toStringAsFixed(0)}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: PaikariTheme.primaryColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${wholesalePrice == null
+                          ? (businessMode && product.moq > 1
+                              ? 'MOQ: ${product.moq} ${product.unitLabel}'
+                              : (isShared ? 'Origen shared product' : 'খুচরা মূল্য'))
+                          : 'MOQ: ${product.moq} ${product.unitLabel} · পাইকারি'}${product.stockQuantity == null ? '' : ' · Stock ${product.availableQuantity}'}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -87,65 +155,11 @@ class ProductCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                  const SizedBox(height: 4),
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  if (product.vendorName != null && product.vendorName!.trim().isNotEmpty)
-                    Text(
-                      product.vendorName!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline, fontWeight: FontWeight.w700),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (wholesalePrice != null) ...[
-                        Text(
-                          '৳${product.retailPrice.toStringAsFixed(0)}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.outline,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Text(
-                        '৳${displayPrice.toStringAsFixed(0)}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: PaikariTheme.primaryColor,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${wholesalePrice == null
-                        ? (businessMode && product.moq > 1
-                            ? 'MOQ: ${product.moq} ${product.unitLabel}'
-                            : (isShared ? 'Origen shared product' : 'খুচরা মূল্য'))
-                        : 'MOQ: ${product.moq} ${product.unitLabel} · পাইকারি'}${product.stockQuantity == null ? '' : ' · Stock ${product.availableQuantity}'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.outline,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

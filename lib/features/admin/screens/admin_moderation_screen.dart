@@ -36,14 +36,54 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : !_isAdmin
-              ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Admin access required.')))
+              ? const Center(child: _AdminStatePanel(icon: Icons.lock_outline, title: 'Admin access required', message: 'এই অংশটি কেবল অনুমোদিত admin account-এর জন্য।'))
               : _error != null
-                  ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!)))
-                  : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 32), children: [_sectionTitle('Vendor verification'), ..._vendors.map(_vendorCard), const SizedBox(height: 24), _sectionTitle('Local product approval'), ..._products.map(_productCard), const SizedBox(height: 24), _sectionTitle('Payment reconciliation'), ..._payments.map(_paymentCard), const SizedBox(height: 24), _sectionTitle('Returns and disputes'), ..._returns.map(_returnCard)])),
+                  ? Center(child: _AdminStatePanel(icon: Icons.cloud_off_outlined, title: 'ডেটা লোড করা যায়নি', message: 'ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।', actionLabel: 'আবার চেষ্টা করুন', onAction: _load))
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                        children: [
+                          _sectionTitle('Vendor verification'),
+                          if (_vendors.isEmpty) _emptyQueue('এখনও কোনো vendor verification queue নেই') else ..._vendors.map(_vendorCard),
+                          const SizedBox(height: 24),
+                          _sectionTitle('Local product approval'),
+                          if (_products.isEmpty) _emptyQueue('এখনও কোনো product approval queue নেই') else ..._products.map(_productCard),
+                          const SizedBox(height: 24),
+                          _sectionTitle('Payment reconciliation'),
+                          if (_payments.isEmpty) _emptyQueue('এখনও কোনো payment reconciliation queue নেই') else ..._payments.map(_paymentCard),
+                          const SizedBox(height: 24),
+                          _sectionTitle('Returns and disputes'),
+                          if (_returns.isEmpty) _emptyQueue('এখনও কোনো return বা dispute নেই') else ..._returns.map(_returnCard),
+                        ],
+                      ),
+                    ),
     );
   }
 
-  Widget _sectionTitle(String title) => Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)));
+  Widget _sectionTitle(String title) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+      );
+
+  Widget _emptyQueue(String message) => Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Card(
+          margin: EdgeInsets.zero,
+          elevation: 0,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Icon(Icons.inbox_outlined, color: Colors.grey.shade500),
+                const SizedBox(width: 12),
+                Expanded(child: Text(message, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w700))),
+              ],
+            ),
+          ),
+        ),
+      );
 
   Widget _vendorCard(Map<String, dynamic> vendor) {
     final status = vendor['verification_status'] as String? ?? 'pending';
@@ -100,7 +140,7 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
     return DropdownButton<String>(
       value: statuses.contains(current) ? current : statuses.first,
       underline: const SizedBox.shrink(),
-      items: statuses.map((status) => DropdownMenuItem(value: status, child: Text(status))).toList(),
+      items: statuses.map((status) => DropdownMenuItem(value: status, child: Text(_statusLabel(status)))).toList(),
       onChanged: (value) {
         if (value != null && value != current) onChanged(value);
       },
@@ -170,4 +210,55 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product status update করা যায়নি: $error')));
     }
   }
+}
+
+
+class _AdminStatePanel extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _AdminStatePanel({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 52, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 12),
+          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 16),
+            FilledButton.icon(onPressed: onAction, icon: const Icon(Icons.refresh), label: Text(actionLabel!)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+String _statusLabel(String status) {
+  const labels = {
+    'pending': 'অপেক্ষমাণ',
+    'verified': 'যাচাইকৃত',
+    'approved': 'অনুমোদিত',
+    'rejected': 'প্রত্যাখ্যাত',
+    'suspended': 'স্থগিত',
+    'received': 'গ্রহণ করা হয়েছে',
+    'refunded': 'রিফান্ড হয়েছে',
+  };
+  return labels[status] ?? status;
 }
