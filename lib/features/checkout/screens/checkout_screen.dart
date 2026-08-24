@@ -87,13 +87,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onChanged: (value) => setState(() => _selectedPaymentMethod = value),
                       cashLabel: l10n.cashOnDelivery,
                     ),
-                    if (_selectedPaymentMethod == 'Bkash') ...[
+                    if (_selectedPaymentMethod == 'Bkash' || _selectedPaymentMethod == 'Bangla QR') ...[
                       const SizedBox(height: 10),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.09), borderRadius: BorderRadius.circular(12)),
-                        child: const Text('Bkash payment confirmation এখন server-side pending থাকবে। বাস্তব payment gateway confirmation না হওয়া পর্যন্ত order paid হিসেবে ধরা হবে না।', style: TextStyle(fontSize: 12, height: 1.4)),
+                        child: Text(
+                          _selectedPaymentMethod == 'Bangla QR'
+                              ? 'Bangla QR acquiring partner এখনো সংযুক্ত হয়নি। Order pending থাকবে; verified provider callback ছাড়া paid হবে না।'
+                              : 'Bkash payment confirmation এখন server-side pending থাকবে। বাস্তব payment gateway confirmation না হওয়া পর্যন্ত order paid হিসেবে ধরা হবে না।',
+                          style: const TextStyle(fontSize: 12, height: 1.4),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 24),
@@ -303,6 +308,13 @@ class _PaymentOptions extends StatelessWidget {
               title: Text('Bkash (বিকাশ)', style: TextStyle(fontWeight: FontWeight.w800)),
               subtitle: Text('Payment confirmation পরে নেওয়া হবে'),
               secondary: Icon(Icons.account_balance_wallet_outlined),
+            ),
+            const Divider(height: 1),
+            const RadioListTile<String>(
+              value: 'Bangla QR',
+              title: Text('Bangla QR', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text('Acquirer setup-এর পরে verified payment হবে'),
+              secondary: Icon(Icons.qr_code_2_outlined),
             ),
           ],
         ),

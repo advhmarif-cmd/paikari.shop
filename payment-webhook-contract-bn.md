@@ -45,6 +45,12 @@ Edge Function প্রথমে raw body signature verify করে, তার�
 
 বাস্তব provider callback চালুর আগে provider-এর webhook support, signature algorithm, retry behavior এবং sandbox documentation আলাদাভাবে যাচাই করতে হবে। Provider নির্বাচন না হওয়া পর্যন্ত এই function deploy করা যাবে, কিন্তু `PAYMENT_WEBHOOK_SECRET` ছাড়া এটি `503` দেবে এবং কোনো payment update করবে না।
 
+## Bangla QR boundary
+
+Bangla QR-এর provider-specific acquiring integration এখনো নির্বাচন করা হয়নি। নির্বাচিত bank/PSP/aggregator-এর callback বা transaction-query response থেকে adapter-কে `provider: "bangla-qr"`, Paikari `order_group_id`, provider reference, provider event ID এবং normalized status তৈরি করতে হবে। Static merchant-presented QR-এ customer-entered amount একা order payment proof নয়; verified provider callback বা trusted transaction query ছাড়া `paid` status পাঠানো যাবে না। Dynamic/order-linked QR, transaction reference, settlement result, reversal/refund notification এবং retry/idempotency behavior provider contract-এ নিশ্চিত করতে হবে।
+
+Bangla QR merchant account, MID, acquiring institution, callback URL/signing requirements এবং settlement/refund rules পাওয়া না পর্যন্ত Flutter app কোনো QR payload বা payment secret ধারণ করবে না। বর্তমান checkout-এ Bangla QR নির্বাচন করলে server order `pending` থাকবে এবং UI স্পষ্টভাবে জানাবে যে acquiring partner configuration বাকি।
+
 ## Local fixture test
 
 ```bash

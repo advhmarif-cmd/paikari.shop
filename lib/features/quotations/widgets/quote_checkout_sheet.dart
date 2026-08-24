@@ -74,12 +74,21 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
                 decoration: const InputDecoration(labelText: 'Payment method', prefixIcon: Icon(Icons.payments_outlined)),
-                items: const [DropdownMenuItem(value: 'Cash on Delivery', child: Text('Cash on Delivery')), DropdownMenuItem(value: 'Bkash', child: Text('Bkash'))],
+                items: const [
+                  DropdownMenuItem(value: 'Cash on Delivery', child: Text('Cash on Delivery')),
+                  DropdownMenuItem(value: 'Bkash', child: Text('Bkash')),
+                  DropdownMenuItem(value: 'Bangla QR', child: Text('Bangla QR')),
+                ],
                 onChanged: (value) => setState(() => _paymentMethod = value ?? 'Cash on Delivery'),
               ),
-              if (_paymentMethod == 'Bkash') ...[
+              if (_paymentMethod == 'Bkash' || _paymentMethod == 'Bangla QR') ...[
                 const SizedBox(height: 8),
-                const Text('Bkash gateway confirmation এখনো চালু হয়নি; এই order paid হিসেবে ধরা হবে না।', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                Text(
+                  _paymentMethod == 'Bangla QR'
+                      ? 'Bangla QR acquiring partner এখনো সংযুক্ত হয়নি; verified callback ছাড়া এই order paid হবে না।'
+                      : 'Bkash gateway confirmation এখনো চালু হয়নি; এই order paid হিসেবে ধরা হবে না।',
+                  style: const TextStyle(fontSize: 12, color: Colors.orange),
+                ),
               ],
               const SizedBox(height: 16),
               SizedBox(

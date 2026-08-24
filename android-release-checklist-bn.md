@@ -30,6 +30,7 @@ Buyer validation must also confirm that the Home app bar shows the unread notifi
 | B2B cart checkout | MOQ না পূরণ হলে client-side warning এবং server-side enforcement থাকবে |
 | Accepted quotation | Quote accept করার পরে immutable session তৈরি হবে |
 | Quote checkout | UI snapshot দেখাবে; RPC-তে কেবল session ID, address, payment method যাবে |
+| Bangla QR checkout | Method accepted হবে, order `pending` থাকবে এবং acquiring partner callback ছাড়া `paid` হবে না |
 | Repeated quote checkout | One-time session ব্যবহৃত হলে দ্বিতীয় order তৈরি হবে না |
 | Expired quote | Checkout disabled/error state দেখাবে |
 | Buyer cancellation | Allowed lifecycle stage-এ cancellation ও reserved stock release হবে |
@@ -43,7 +44,7 @@ Verified vendor-এর local product approval pending অবস্থায় publ
 
 ## Payment checks
 
-Cash on Delivery order-এর server payment state `unpaid` থাকবে। Bkash selection এখন `pending` state তৈরি করবে; gateway confirmation না হওয়া পর্যন্ত paid দেখানো যাবে না। Webhook contract test করার সময় raw normalized JSON body-এর HMAC signature, provider event ID এবং service-only RPC requirement পরীক্ষা করতে হবে। একই provider ও event ID পুনরায় পাঠালে duplicate payment transition হবে না।
+Cash on Delivery order-এর server payment state `unpaid` থাকবে। Bkash এবং Bangla QR selection এখন `pending` state তৈরি করবে; verified provider confirmation না হওয়া পর্যন্ত paid দেখানো যাবে না। Bangla QR selection-এ acquiring partner configuration না থাকলে UI-তে clear pending notice থাকবে এবং কোনো fake QR payload বা manual screenshot-কে payment confirmation হিসেবে গ্রহণ করা যাবে না। Webhook contract test করার সময় raw normalized JSON body-এর HMAC signature, provider event ID এবং service-only RPC requirement পরীক্ষা করতে হবে। একই provider ও event ID পুনরায় পাঠালে duplicate payment transition হবে না।
 
 ## Admin checks
 
