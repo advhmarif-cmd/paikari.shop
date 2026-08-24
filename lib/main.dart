@@ -19,6 +19,7 @@ import 'package:paikari_shop/features/admin/screens/admin_moderation_screen.dart
 import 'package:paikari_shop/features/profile/screens/profile_screen.dart';
 import 'package:paikari_shop/features/notifications/screens/notifications_screen.dart';
 import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
+import 'package:paikari_shop/features/support/screens/legal_support_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_onboarding_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_dashboard_screen.dart';
 import 'package:paikari_shop/features/buyer/screens/business_buyer_screen.dart';
@@ -77,6 +78,7 @@ class PaikariApp extends StatelessWidget {
         },
         '/profile': (context) => const ProfileScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        '/support/policies': (context) => const LegalSupportScreen(),
         '/vendor/onboarding': (context) => const VendorOnboardingScreen(),
         '/vendor/dashboard': (context) => const VendorDashboardScreen(),
         '/vendor/products/new': (context) => const VendorProductFormScreen(),

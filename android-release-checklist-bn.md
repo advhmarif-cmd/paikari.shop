@@ -51,6 +51,10 @@ Admin validation must also confirm that payment reconciliation and return/disput
 
 Supabase Auth user-এর `app_metadata.role` সত্যিই `admin` না হলে `/admin/moderation` route কোনো moderation data দেখাবে না। Admin user vendor verification status এবং শুধু Paikari local product approval status পরিবর্তন করতে পারবে। Origen shared product edit বা approval operation-এর মাধ্যমে পরিবর্তনযোগ্য নয়।
 
+## Policy and support checks
+
+Profile থেকে `নীতি ও সাহায্য` screen খুলবে এবং Privacy, Terms, Return/Refund ও Support sections readable থাকবে। Policy copy-কে production launch-এর আগে business owner এবং applicable legal reviewer approve করতে হবে। Verified support phone, email বা helpdesk URL configure না করা পর্যন্ত app-এ কোনো placeholder contact-কে official support হিসেবে দেখানো যাবে না।
+
 ## Release blockers
 
 Flutter analyzer/test/build চালানো না গেলে release অনুমোদন করা যাবে না। কোনো authenticated user অন্য buyer-এর order, payment transaction, quote session বা tracking history পড়তে পারলে release বন্ধ করতে হবে। Client request-এ trusted price, total, vendor ownership, stock বা payment confirmation পাঠানো হলে implementation পুনরায় review করতে হবে।
