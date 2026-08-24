@@ -5,6 +5,7 @@ import 'package:paikari_shop/core/widgets/product_image.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
 import 'package:paikari_shop/features/inquiries/widgets/inquiry_sheet.dart';
+import 'package:paikari_shop/features/quotations/widgets/quotation_sheet.dart';
 import 'package:paikari_shop/features/vendors/models/vendor_profile.dart';
 import 'package:paikari_shop/features/vendors/providers/vendor_provider.dart';
 
@@ -126,23 +127,41 @@ class ProductDetailScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (businessMode && product.vendorId != null) ...[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => showInquirySheet(context, ref, product),
-                  icon: const Icon(Icons.message_outlined),
-                  label: const Text('Inquiry'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(54),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showInquirySheet(context, ref, product),
+                      icon: const Icon(Icons.message_outlined),
+                      label: const Text('Inquiry'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showQuotationSheet(context, ref, product),
+                      icon: const Icon(Icons.request_quote_outlined),
+                      label: const Text('Quote'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
+              const SizedBox(height: 10),
             ],
-            Expanded(
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: product.isAvailable
                     ? () {

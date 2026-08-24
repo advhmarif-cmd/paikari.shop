@@ -5,6 +5,11 @@ import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/vendors/providers/vendor_provider.dart';
 import 'package:paikari_shop/features/buyer/providers/business_buyer_provider.dart';
+import 'package:paikari_shop/features/quotations/models/quotation_request.dart';
+import 'package:paikari_shop/features/quotations/providers/quotation_provider.dart';
+import 'package:paikari_shop/features/quotations/repositories/quotation_repository.dart';
+import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
+import 'package:paikari_shop/features/checkout/models/order.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
@@ -69,6 +74,16 @@ class ProfileScreen extends ConsumerWidget {
               loading: () => const SizedBox(height: 8),
               error: (_, __) => _BusinessBuyerCard(onOpen: () => Navigator.pushNamed(context, '/buyer/business')),
             ),
+            const SizedBox(height: 24),
+            const Text('My quotations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            ref.watch(buyerQuotationsProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stack) => Text('Quotation load করা যায়নি: $error'),
+              data: (quotes) => quotes.isEmpty
+                  ? const Text('এখনও কোনো quotation নেই', style: TextStyle(color: Colors.grey))
+                  : Column(children: quotes.map((quote) => _BuyerQuoteTile(quote: quote, onAccept: () => _acceptQuote(context, ref, quote))).toList()),
+            ),
             const SizedBox(height: 28),
             Text(l10n.myOrders, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 12),
@@ -93,7 +108,15 @@ class ProfileScreen extends ConsumerWidget {
                               padding: const EdgeInsets.only(top: 5),
                               child: Text('${l10n.orderDate}: ${DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt)}\n${l10n.status}: ${order.status.name.toUpperCase()}'),
                             ),
-                            trailing: Text('৳${order.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: PaikariTheme.primaryColor)),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('৳${order.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: PaikariTheme.primaryColor)),
+                                if (order.orderGroupId != null && {OrderStatus.pending, OrderStatus.confirmed, OrderStatus.processing}.contains(order.status))
+                                  TextButton(onPressed: () => _cancelOrder(context, ref, order), child: const Text('Cancel')),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -105,6 +128,29 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+Future<void> _cancelOrder(BuildContext context, WidgetRef ref, Order order) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Order cancel করবেন?'),
+      content: const Text('Reserved stock থাকলে সেটি release করা হবে।'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('না')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('হ্যাঁ, cancel করুন')),
+      ],
+    ),
+  );
+  if (confirmed != true || order.orderGroupId == null) return;
+  try {
+    await ref.read(orderRepositoryProvider).cancelOrderGroup(order.orderGroupId!);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order cancel হয়েছে এবং stock release করা হয়েছে'), behavior: SnackBarBehavior.floating));
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order cancel করা যায়নি: $error'), behavior: SnackBarBehavior.floating));
   }
 }
 
@@ -212,6 +258,41 @@ class _BusinessBuyerCard extends StatelessWidget {
             IconButton(tooltip: 'B2B buyer setup', onPressed: onOpen, icon: const Icon(Icons.arrow_forward_ios, size: 18)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+Future<void> _acceptQuote(BuildContext context, WidgetRef ref, QuotationRequest quote) async {
+  try {
+    await ref.read(quotationRepositoryProvider).accept(quote.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quotation accepted হয়েছে'), behavior: SnackBarBehavior.floating));
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Quotation accept করা যায়নি: $error'), behavior: SnackBarBehavior.floating));
+  }
+}
+
+class _BuyerQuoteTile extends StatelessWidget {
+  final QuotationRequest quote;
+  final VoidCallback onAccept;
+
+  const _BuyerQuoteTile({required this.quote, required this.onAccept});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasQuote = quote.status == 'quoted' && quote.quotedUnitPrice != null;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: const CircleAvatar(child: Icon(Icons.request_quote_outlined)),
+        title: Text('${quote.requestedQuantity} units · ${quote.status}', style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(hasQuote ? 'Vendor quote: ৳${quote.quotedUnitPrice!.toStringAsFixed(0)} / unit' : quote.message, maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: hasQuote ? TextButton(onPressed: onAccept, child: const Text('Accept')) : null,
       ),
     );
   }

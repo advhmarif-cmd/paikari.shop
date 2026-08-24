@@ -2,7 +2,7 @@ import 'package:paikari_shop/features/cart/models/cart_item.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/checkout/models/address.dart';
 
-enum OrderStatus { pending, processing, shipped, delivered, cancelled }
+enum OrderStatus { pending, confirmed, processing, shipped, delivered, cancelled }
 
 class Order {
   final String id;
@@ -13,6 +13,7 @@ class Order {
   final DateTime createdAt;
   final OrderStatus status;
   final String buyerMode;
+  final String? orderGroupId;
 
   const Order({
     required this.id,
@@ -23,6 +24,7 @@ class Order {
     required this.createdAt,
     this.status = OrderStatus.pending,
     this.buyerMode = 'b2c',
+    this.orderGroupId,
   });
 
   factory Order.fromSupabase(Map<String, dynamic> data) {
@@ -68,6 +70,7 @@ class Order {
         orElse: () => OrderStatus.pending,
       ),
       buyerMode: buyerMode == 'b2b' ? 'b2b' : 'b2c',
+      orderGroupId: data['order_group_id'] as String?,
     );
   }
 }

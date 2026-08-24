@@ -5,10 +5,16 @@ import 'package:paikari_shop/core/widgets/product_image.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/products/repositories/product_repository.dart';
 import 'package:paikari_shop/features/vendors/providers/vendor_products_provider.dart';
+import 'package:paikari_shop/features/vendors/providers/vendor_orders_provider.dart';
+import 'package:paikari_shop/features/vendors/models/vendor_order.dart';
+import 'package:paikari_shop/features/checkout/repositories/supabase_order_repository.dart';
 import 'package:paikari_shop/features/vendors/providers/vendor_provider.dart';
 import 'package:paikari_shop/features/inquiries/models/product_inquiry.dart';
 import 'package:paikari_shop/features/inquiries/providers/inquiry_provider.dart';
 import 'package:paikari_shop/features/inquiries/repositories/inquiry_repository.dart';
+import 'package:paikari_shop/features/quotations/models/quotation_request.dart';
+import 'package:paikari_shop/features/quotations/providers/quotation_provider.dart';
+import 'package:paikari_shop/features/quotations/repositories/quotation_repository.dart';
 
 class VendorDashboardScreen extends ConsumerWidget {
   const VendorDashboardScreen({super.key});
@@ -75,6 +81,26 @@ class VendorDashboardScreen extends ConsumerWidget {
                   ? const Text('এখনও কোনো bulk inquiry নেই', style: TextStyle(color: Colors.grey))
                   : Column(children: inquiries.map((inquiry) => _InquiryTile(inquiry: inquiry, onRespond: () => _respondToInquiry(context, ref, inquiry))).toList()),
             ),
+            const SizedBox(height: 24),
+            const Text('Vendor orders', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            ref.watch(vendorOrdersProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stack) => Text('Order load করা যায়নি: $error'),
+              data: (orders) => orders.isEmpty
+                  ? const Text('এখনও কোনো vendor order নেই', style: TextStyle(color: Colors.grey))
+                  : Column(children: orders.map((order) => _VendorOrderTile(order: order, onAdvance: () => _advanceVendorOrder(context, ref, order))).toList()),
+            ),
+            const SizedBox(height: 24),
+            const Text('Quotation requests', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            ref.watch(vendorQuotationsProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stack) => Text('Quote load করা যায়নি: $error'),
+              data: (quotes) => quotes.isEmpty
+                  ? const Text('এখনও কোনো quotation request নেই', style: TextStyle(color: Colors.grey))
+                  : Column(children: quotes.map((quote) => _VendorQuoteTile(quote: quote, onRespond: () => _respondToQuote(context, ref, quote))).toList()),
+            ),
           ],
         ),
       ),
@@ -127,6 +153,123 @@ Future<void> _respondToInquiry(BuildContext context, WidgetRef ref, ProductInqui
     ),
   );
   responseController.dispose();
+}
+
+Future<void> _advanceVendorOrder(BuildContext context, WidgetRef ref, VendorOrder order) async {
+  const nextStatus = {
+    'pending': 'confirmed',
+    'confirmed': 'processing',
+    'processing': 'shipped',
+    'shipped': 'delivered',
+  };
+  final next = nextStatus[order.status];
+  if (next == null) return;
+  try {
+    await ref.read(orderRepositoryProvider).updateVendorOrderStatus(vendorOrderId: order.id, status: next);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order status $next হয়েছে'), behavior: SnackBarBehavior.floating));
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Status update করা যায়নি: $error'), behavior: SnackBarBehavior.floating));
+  }
+}
+
+Future<void> _respondToQuote(BuildContext context, WidgetRef ref, QuotationRequest quote) async {
+  final price = TextEditingController();
+  final quantity = TextEditingController(text: quote.requestedQuantity.toString());
+  final delivery = TextEditingController(text: '0');
+  final message = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Quotation দিন'),
+      content: Form(
+        key: formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(controller: quantity, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Quantity')),
+              TextFormField(controller: price, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Unit price', prefixText: '৳ '), validator: (value) => double.tryParse(value ?? '') == null ? 'দাম দিন' : null),
+              TextFormField(controller: delivery, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Delivery charge', prefixText: '৳ ')),
+              TextFormField(controller: message, maxLines: 3, decoration: const InputDecoration(labelText: 'Vendor message')),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('বাতিল')),
+        FilledButton(
+          onPressed: () async {
+            if (!formKey.currentState!.validate()) return;
+            await ref.read(quotationRepositoryProvider).respond(
+                  quotationId: quote.id,
+                  quotedQuantity: int.tryParse(quantity.text.trim()) ?? quote.requestedQuantity,
+                  quotedUnitPrice: double.parse(price.text.trim()),
+                  deliveryCharge: double.tryParse(delivery.text.trim()) ?? 0,
+                  validUntil: DateTime.now().add(const Duration(days: 7)),
+                  vendorMessage: message.text,
+                );
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+          },
+          child: const Text('Send quote'),
+        ),
+      ],
+    ),
+  );
+  price.dispose();
+  quantity.dispose();
+  delivery.dispose();
+  message.dispose();
+}
+
+class _VendorQuoteTile extends StatelessWidget {
+  final QuotationRequest quote;
+  final VoidCallback onRespond;
+
+  const _VendorQuoteTile({required this.quote, required this.onRespond});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: const CircleAvatar(child: Icon(Icons.request_quote_outlined)),
+        title: Text('${quote.requestedQuantity} units · ${quote.status}', style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(quote.message, maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: quote.status == 'open' || quote.status == 'declined' ? TextButton(onPressed: onRespond, child: const Text('Quote')) : null,
+      ),
+    );
+  }
+}
+
+class _VendorOrderTile extends StatelessWidget {
+  final VendorOrder order;
+  final VoidCallback onAdvance;
+
+  const _VendorOrderTile({required this.order, required this.onAdvance});
+
+  @override
+  Widget build(BuildContext context) {
+    final canAdvance = {'pending', 'confirmed', 'processing', 'shipped'}.contains(order.status);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: const CircleAvatar(child: Icon(Icons.local_shipping_outlined)),
+        title: Text(order.vendorStoreName, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text('${order.items.length} line · ৳${order.totalAmount.toStringAsFixed(0)} · ${order.status}'),
+        trailing: canAdvance ? TextButton(onPressed: onAdvance, child: const Text('Next status')) : null,
+      ),
+    );
+  }
 }
 
 class _InquiryTile extends StatelessWidget {

@@ -21,7 +21,7 @@ class SupabaseOrderRepository {
 
     final businessMode = items.any((item) => item.businessMode);
     final response = await _supabase.rpc(
-      'place_order_from_cart',
+      'place_order_group_from_cart',
       params: {
         'p_items': items
             .map((item) => {
@@ -42,6 +42,31 @@ class SupabaseOrderRepository {
     return app_order.Order.fromSupabase(
       Map<String, dynamic>.from(response as Map),
     );
+  }
+
+  Future<void> cancelOrderGroup(String orderGroupId) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('লগইন করা প্রয়োজন');
+    await _supabase.rpc('cancel_order_group', params: {'p_order_group_id': orderGroupId});
+  }
+
+  Future<void> updateVendorOrderStatus({required String vendorOrderId, required String status}) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('লগইন করা প্রয়োজন');
+    await _supabase.rpc('update_vendor_order_status', params: {
+      'p_vendor_order_id': vendorOrderId,
+      'p_status': status,
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> watchVendorOrders() {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return const Stream.empty();
+    return _supabase
+        .from('vendor_orders')
+        .stream(primaryKey: ['id'])
+        .eq('vendor_id', user.id)
+        .order('created_at', ascending: false);
   }
 
   Stream<List<app_order.Order>> getOrders(String userId) {
