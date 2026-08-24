@@ -12,6 +12,9 @@ import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.da
 import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart';
 import 'package:paikari_shop/features/checkout/models/order_status_event.dart';
+import 'package:paikari_shop/features/notifications/models/marketplace_notification.dart';
+import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
+import 'package:paikari_shop/features/returns/repositories/return_repository.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
@@ -75,6 +78,16 @@ class ProfileScreen extends ConsumerWidget {
               ),
               loading: () => const SizedBox(height: 8),
               error: (_, __) => _BusinessBuyerCard(onOpen: () => Navigator.pushNamed(context, '/buyer/business')),
+            ),
+            const SizedBox(height: 24),
+            const Text('Recent updates', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            ref.watch(myNotificationsProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stack) => Text('Notification load করা যায়নি: $error'),
+              data: (notifications) => notifications.isEmpty
+                  ? const Text('এখনও কোনো নতুন update নেই', style: TextStyle(color: Colors.grey))
+                  : Column(children: notifications.take(3).map((notification) => _NotificationTile(notification: notification)).toList()),
             ),
             const SizedBox(height: 24),
             const Text('My quotations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
@@ -355,6 +368,17 @@ Future<void> _showOrderTracking(BuildContext context, WidgetRef ref, Order order
                   const Text('এখনও status history তৈরি হয়নি।')
                 else
                   ...events.map((event) => _OrderStatusEventTile(event: event)),
+                if (order.status == OrderStatus.delivered) ...[
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showReturnRequestDialog(context, ref, order),
+                      icon: const Icon(Icons.assignment_return_outlined),
+                      label: const Text('Return request'),
+                    ),
+                  ),
+                ],
               ],
             );
           },
@@ -392,6 +416,82 @@ class _OrderStatusEventTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+Future<void> _showReturnRequestDialog(BuildContext context, WidgetRef ref, Order order) async {
+  final reason = TextEditingController();
+  final details = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  final submitted = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Return request দিন'),
+      content: Form(
+        key: formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(controller: reason, decoration: const InputDecoration(labelText: 'Reason'), validator: (value) => (value?.trim().length ?? 0) < 3 ? 'কারণ লিখুন' : null),
+              TextFormField(controller: details, maxLines: 4, decoration: const InputDecoration(labelText: 'Details (optional)')),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('বাতিল')),
+        FilledButton(
+          onPressed: () async {
+            if (!formKey.currentState!.validate()) return;
+            try {
+              await ref.read(returnRepositoryProvider).create(
+                    orderGroupId: order.orderGroupId!,
+                    quantity: 1,
+                    reason: reason.text.trim(),
+                    details: details.text.trim(),
+                  );
+              if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+            } catch (error) {
+              if (dialogContext.mounted) ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Return request করা যায়নি: $error')));
+            }
+          },
+          child: const Text('Submit'),
+        ),
+      ],
+    ),
+  );
+  reason.dispose();
+  details.dispose();
+  if (submitted == true && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Return request জমা হয়েছে'), behavior: SnackBarBehavior.floating));
+  }
+}
+
+class _NotificationTile extends ConsumerWidget {
+  final MarketplaceNotification notification;
+
+  const _NotificationTile({required this.notification});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isUnread = notification.readAt == null;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      color: isUnread ? PaikariTheme.primaryColor.withValues(alpha: 0.08) : null,
+      child: ListTile(
+        dense: true,
+        leading: Icon(isUnread ? Icons.notifications_active_outlined : Icons.notifications_none_outlined),
+        title: Text(notification.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(notification.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+        onTap: isUnread
+            ? () async {
+                await ref.read(notificationRepositoryProvider).markRead(notification.id);
+              }
+            : null,
       ),
     );
   }

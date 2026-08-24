@@ -15,6 +15,9 @@ Paikari এখন B2B-first এবং B2C-enabled marketplace foundation-এর 
 | Admin moderation foundation | সম্পন্ন | JWT app_metadata-ভিত্তিক vendor/product approval RPC ও Admin Center |
 | Payment webhook idempotency | সম্পন্ন | Provider event ID unique handling ও illegal payment regression block |
 | Delivery tracking foundation | সম্পন্ন | Courier, tracking number, tracking URL এবং shipped/delivered timestamps |
+| Returns/disputes foundation | সম্পন্ন | Delivered order থেকে buyer return request, vendor/admin response এবং refund-state boundary |
+| Notifications foundation | সম্পন্ন | Order, courier ও return events থেকে buyer/vendor in-app notifications |
+| Admin reconciliation | সম্পন্ন | Server-recorded payment transactions admin-only read view |
 | Real Bkash gateway/webhook | পরবর্তী ধাপ | Provider credentials, callback contract ও server endpoint প্রয়োজন |
 | Delivery carrier integration | পরবর্তী ধাপ | Carrier/API নির্বাচন এবং carrier-specific tracking workflow প্রয়োজন |
 
@@ -24,11 +27,13 @@ Order status-এর জন্য `pending → confirmed → processing → shipp
 
 Payment foundation-এ `order_groups` ও `order_records`-এ server-owned `payment_status`, `payment_reference` এবং `paid_at` যোগ হয়েছে। `payment_transactions` audit table-এ order amount, method, state, provider reference, provider event ID এবং confirmation time রাখা হয়। `confirm_order_payment` client-authenticated execution থেকে বন্ধ; এটি কেবল trusted Supabase `service_role`-এর জন্য executable রাখা হয়েছে। একই `provider + event_id` দ্বিতীয়বার এলে idempotentভাবে আগের order state ফেরত আসে, এবং paid/refunded state-এ অবৈধ regression বন্ধ থাকে।
 
-Admin moderation-এ কোনো `public.users` role lookup ব্যবহার করা হয়নি। `is_admin()` Supabase JWT-এর `app_metadata.role = admin` দেখে। Vendor verification এবং Paikari local product approval status পরিবর্তনের জন্য আলাদা server-authorized RPC ব্যবহার হয়েছে। Origen master rows admin local-product approval RPC দ্বারা পরিবর্তনযোগ্য নয়।
+Admin moderation-এ কোনো `public.users` role lookup ব্যবহার করা হয়নি। `is_admin()` Supabase JWT-এর `app_metadata.role = admin` দেখে। Vendor verification এবং Paikari local product approval status পরিবর্তনের জন্য আলাদা server-authorized RPC ব্যবহার হয়েছে। Payment reconciliation শুধু server-recorded transaction read করে; client থেকে payment status পরিবর্তনের কোনো admin UI নেই। Origen master rows admin local-product approval RPC দ্বারা পরিবর্তনযোগ্য নয়।
+
+Returns/disputes foundation-এ delivered order-এর buyer return request, vendor response এবং admin-only refunded state আছে। `order_notifications` order status, courier tracking ও return status থেকে participant-specific in-app update তৈরি করে। Notification read marking-ও owner-scoped RPC-এর মাধ্যমে হয়; direct notification mutation বন্ধ।
 
 ## Flutter Android UX
 
-Buyer Profile-এ order card tap করলে tracking timeline খোলে। Vendor Center-এ next status, shipment-এর আগে cancellation action এবং shipped করার সময় courier/tracking details দেওয়ার dialog আছে। Courier metadata buyer-safe timeline event হিসেবে দেখা যায়। Checkout success state server-returned payment status দেখায়। Bkash নির্বাচন করলে UI স্পষ্টভাবে জানায় যে gateway confirmation এখনও চালু হয়নি এবং order paid হিসেবে গণ্য হবে না। Admin Center route `/admin/moderation` রাখা হয়েছে; route-এ ঢুকলেও backend `is_admin()` false হলে moderation data দেখানো হয় না।
+Buyer Profile-এ recent updates, order card tracking timeline এবং delivered order-এর Return request action আছে। Vendor Center-এ next status, shipment-এর আগে cancellation action এবং shipped করার সময় courier/tracking details দেওয়ার dialog আছে। Courier metadata buyer-safe timeline event ও notification হিসেবে দেখা যায়। Checkout success state server-returned payment status দেখায়। Bkash নির্বাচন করলে UI স্পষ্টভাবে জানায় যে gateway confirmation এখনও চালু হয়নি এবং order paid হিসেবে গণ্য হবে না। Admin Center route `/admin/moderation`-এ vendor/product moderation ও payment reconciliation আছে; route-এ ঢুকলেও backend `is_admin()` false হলে moderation data দেখানো হয় না।
 
 ## নিরাপত্তা সীমা
 
@@ -52,7 +57,7 @@ flutter test
 flutter build apk --debug
 ```
 
-তারপর অন্তত দুইটি authenticated test identity দিয়ে এই flow পরীক্ষা করা উচিত: verified local vendor product → buyer RFQ → vendor quote → buyer accept → quote checkout → pending order → vendor confirm → processing → shipped → delivered। আলাদা test order দিয়ে vendor cancellation, buyer cancellation, insufficient stock, expired quote, repeated quote checkout এবং Bkash pending state যাচাই করতে হবে।
+তারপর অন্তত দুইটি authenticated test identity দিয়ে এই flow পরীক্ষা করা উচিত: verified local vendor product → buyer RFQ → vendor quote → buyer accept → quote checkout → pending order → vendor confirm → processing → shipped → delivered। আলাদা test order দিয়ে vendor cancellation, buyer cancellation, insufficient stock, expired quote, repeated quote checkout, courier details, delivered-order return request, vendor return response, notification read marking, admin reconciliation এবং Bkash pending state যাচাই করতে হবে।
 
 ## পরবর্তী বাস্তব milestone
 

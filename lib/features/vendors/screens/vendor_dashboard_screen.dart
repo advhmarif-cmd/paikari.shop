@@ -15,6 +15,8 @@ import 'package:paikari_shop/features/inquiries/repositories/inquiry_repository.
 import 'package:paikari_shop/features/quotations/models/quotation_request.dart';
 import 'package:paikari_shop/features/quotations/providers/quotation_provider.dart';
 import 'package:paikari_shop/features/quotations/repositories/quotation_repository.dart';
+import 'package:paikari_shop/features/returns/models/return_request.dart';
+import 'package:paikari_shop/features/returns/repositories/return_repository.dart';
 
 class VendorDashboardScreen extends ConsumerWidget {
   const VendorDashboardScreen({super.key});
@@ -90,6 +92,16 @@ class VendorDashboardScreen extends ConsumerWidget {
               data: (orders) => orders.isEmpty
                   ? const Text('এখনও কোনো vendor order নেই', style: TextStyle(color: Colors.grey))
                   : Column(children: orders.map((order) => _VendorOrderTile(order: order, onAdvance: () => _advanceVendorOrder(context, ref, order), onCancel: () => _cancelVendorOrder(context, ref, order))).toList()),
+            ),
+            const SizedBox(height: 24),
+            const Text('Return requests', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            ref.watch(vendorReturnRequestsProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stack) => Text('Return load করা যায়নি: $error'),
+              data: (returns) => returns.isEmpty
+                  ? const Text('এখনও কোনো return request নেই', style: TextStyle(color: Colors.grey))
+                  : Column(children: returns.map((request) => _VendorReturnTile(request: request, onRespond: () => _respondToReturn(context, ref, request))).toList()),
             ),
             const SizedBox(height: 24),
             const Text('Quotation requests', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
@@ -260,6 +272,53 @@ Future<void> _cancelVendorOrder(BuildContext context, WidgetRef ref, VendorOrder
   }
 }
 
+Future<void> _respondToReturn(BuildContext context, WidgetRef ref, ReturnRequest request) async {
+  final note = TextEditingController();
+  var status = request.status == 'requested' ? 'approved' : 'received';
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: const Text('Return request response'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(request.reason, style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: status,
+              items: const [
+                DropdownMenuItem(value: 'approved', child: Text('Approve return')),
+                DropdownMenuItem(value: 'rejected', child: Text('Reject return')),
+                DropdownMenuItem(value: 'received', child: Text('Mark received')),
+              ],
+              onChanged: (value) { if (value != null) setState(() => status = value); },
+              decoration: const InputDecoration(labelText: 'Status'),
+            ),
+            TextField(controller: note, maxLines: 3, decoration: const InputDecoration(labelText: 'Resolution note (optional)')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('বাতিল')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await ref.read(returnRepositoryProvider).respond(returnRequestId: request.id, status: status, resolutionNote: note.text.trim());
+                if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+              } catch (error) {
+                if (dialogContext.mounted) ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Return response save করা যায়নি: $error')));
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ),
+  );
+  note.dispose();
+  if (result == true) ref.invalidate(vendorReturnRequestsProvider);
+}
+
 Future<void> _respondToQuote(BuildContext context, WidgetRef ref, QuotationRequest quote) async {
   final price = TextEditingController();
   final quantity = TextEditingController(text: quote.requestedQuantity.toString());
@@ -309,6 +368,30 @@ Future<void> _respondToQuote(BuildContext context, WidgetRef ref, QuotationReque
   quantity.dispose();
   delivery.dispose();
   message.dispose();
+}
+
+class _VendorReturnTile extends StatelessWidget {
+  final ReturnRequest request;
+  final VoidCallback onRespond;
+
+  const _VendorReturnTile({required this.request, required this.onRespond});
+
+  @override
+  Widget build(BuildContext context) {
+    final canRespond = {'requested', 'approved', 'received'}.contains(request.status);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: const CircleAvatar(child: Icon(Icons.assignment_return_outlined)),
+        title: Text('${request.status} · ${request.quantity} unit', style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(request.reason, maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: canRespond ? TextButton(onPressed: onRespond, child: const Text('Respond')) : null,
+      ),
+    );
+  }
 }
 
 class _VendorQuoteTile extends StatelessWidget {

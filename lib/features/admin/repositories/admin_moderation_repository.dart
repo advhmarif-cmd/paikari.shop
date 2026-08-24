@@ -21,6 +21,11 @@ class AdminModerationRepository {
     return (result as List<dynamic>).map((row) => Map<String, dynamic>.from(row as Map)).toList();
   }
 
+  Future<List<Map<String, dynamic>>> listPayments() async {
+    final result = await _supabase.rpc('admin_list_payment_transactions');
+    return (result as List<dynamic>).map((row) => Map<String, dynamic>.from(row as Map)).toList();
+  }
+
   Future<void> updateVendorStatus({required String vendorId, required String status}) async {
     await _supabase.rpc('admin_update_vendor_status', params: {'p_vendor_id': vendorId, 'p_status': status});
   }
