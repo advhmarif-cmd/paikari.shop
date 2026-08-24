@@ -108,7 +108,9 @@ class AuthWrapper extends ConsumerWidget {
             loading: () => const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             ),
-            error: (error, stack) => const LoginScreen(),
+            error: (error, stack) => _ProfileBootstrapError(
+              onRetry: () => ref.invalidate(userProvider),
+            ),
           );
         }
         return const LoginScreen();
@@ -118,6 +120,35 @@ class AuthWrapper extends ConsumerWidget {
       ),
       error: (error, stack) => Scaffold(
         body: Center(child: Text('Auth Error: $error')),
+      ),
+    );
+  }
+}
+
+class _ProfileBootstrapError extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ProfileBootstrapError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.person_off_outlined, size: 52),
+              const SizedBox(height: 12),
+              const Text('Profile load করা যায়নি', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text('ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700)),
+              const SizedBox(height: 16),
+              FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('আবার চেষ্টা করুন')),
+            ],
+          ),
+        ),
       ),
     );
   }

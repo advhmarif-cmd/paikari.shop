@@ -41,3 +41,8 @@ On a Flutter-enabled machine, run `flutter pub get`, `flutter analyze`, and `flu
 [3]: https://supabase.com/docs/guides/auth/native-mobile-deep-linking "Supabase native mobile deep linking"
 [4]: https://supabase.com/docs/guides/auth/redirect-urls "Supabase Auth redirect URL configuration"
 [5]: https://supabase.com/docs/guides/functions "Supabase Edge Functions documentation"
+
+
+## Final profile-table repair — 24 August 2026
+
+A live audit found that `public.users` was absent even though the Flutter Supabase Auth repository reads and upserts this table after authentication. Migration `20260824150000_create_auth_profile_users.sql` now creates the profile table with a foreign key to `auth.users`, own-row RLS policies for authenticated users, no anonymous access, no authenticated delete, and a security-definer trigger that prevents client-side role or KYC elevation. Admin authorization remains based on `auth.jwt()->app_metadata->>'role'`; `public.users` is not an admin authorization source. The migration was applied successfully to live Supabase and verified with RLS/policy metadata.

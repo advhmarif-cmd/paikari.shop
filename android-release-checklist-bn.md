@@ -65,3 +65,8 @@ Release-এর আগে Supabase security advisor এবং direct privilege au
 Flutter analyzer/test/build চালানো না গেলে release অনুমোদন করা যাবে না। কোনো authenticated user অন্য buyer-এর order, payment transaction, quote session বা tracking history পড়তে পারলে release বন্ধ করতে হবে। Client request-এ trusted price, total, vendor ownership, stock বা payment confirmation পাঠানো হলে implementation পুনরায় review করতে হবে।
 
 বর্তমান sandbox-এ Flutter/Dart executable অনুপস্থিত, তাই এই checklist-এর local command ও device section এখানে execute করা হয়নি।
+
+
+## Auth profile checks
+
+Authenticated login-এর পরে `public.users` profile row তৈরি/পড়া/আপডেট হচ্ছে কি না পরীক্ষা করতে হবে। অন্য authenticated user-এর profile query, anonymous access, profile delete এবং client-side role/KYC elevation প্রত্যাখ্যাত হচ্ছে কি না যাচাই করতে হবে। Network/profile-load failure-এ app ভুলভাবে Login screen-এ না পাঠিয়ে স্পষ্ট retry state দেখাবে।

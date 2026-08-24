@@ -77,3 +77,12 @@ Live Supabase security-advisor audit-এ পাওয়া anonymous RPC execution
 Live-এ প্রয়োগ করা migration দুটি হলো `least_privilege_rpc_views` এবং `internal_rpc_privilege_cleanup`। Source repository-তে এগুলো যথাক্রমে `20260824132000_least_privilege_rpc_views.sql` এবং `20260824133000_internal_rpc_privilege_cleanup.sql` হিসেবে রাখা হয়েছে। শেষ code push `986dbdc`।
 
 Security advisor-এ অবশিষ্ট authenticated SECURITY DEFINER warnings ইচ্ছাকৃত: এগুলো client-facing RPC হলেও প্রতিটি function-এর ভিতরে buyer/vendor/admin ownership বা role validation আছে, আর server-authoritative transaction ও RLS enforcement বজায় রাখতে SECURITY DEFINER প্রয়োজন। `shipping_settings` এবং `stock_movements`-এর RLS-without-policy notices-ও intentional private tables; client roles-এর access নেই।
+
+
+## Auth profile repair — 24 August 2026
+নতুন live audit-এ দেখা যায় যে `public.users` table অনুপস্থিত ছিল, অথচ Supabase Auth-এর পরে profile read/insert/update flow এই table ব্যবহার করে। এটি login-এর পরে profile bootstrap-এর বাস্তব blocker ছিল। `20260824150000_create_auth_profile_users.sql` migration-এ secure `public.users` table, own-row RLS policies এবং profile trigger যোগ করা হয়েছে এবং live Supabase-এ সফলভাবে apply হয়েছে।
+
+Live verification-এ `public.users`-এর RLS enabled এবং কেবল authenticated own-row `SELECT`, `INSERT`, `UPDATE` policies পাওয়া গেছে। Anonymous access ও authenticated delete বন্ধ। Profile trigger client-কে role বা KYC verification নিজে elevate করতে দেয় না; admin authorization এখনও `auth.jwt()->app_metadata->>'role'`-ভিত্তিক এবং `public.users` admin privilege-এর উৎস নয়।
+
+## Bangla QR payment boundary — 24 August 2026
+Bangla QR checkout method এখন cart এবং accepted-quote checkout উভয় flow-এ server-validated। `order_groups`, `order_records` এবং `payment_transactions`-এর allowlist-এ `Bangla QR` যোগ হয়েছে; initial payment state `pending` হয়। Acquiring bank/PSP callback বা trusted transaction-query ছাড়া order `paid` করা যাবে না। Merchant ID, provider API, callback signing এবং settlement credentials না থাকায় কোনো fake QR payload বা live gateway activation করা হয়নি।
