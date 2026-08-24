@@ -19,6 +19,17 @@ class ProductRepository {
         .toList();
   }
 
+  Future<Product?> getProductBySlug(String slug, {bool businessMode = false}) async {
+    final response = await _supabase
+        .from(businessMode ? 'b2b_products' : 'b2c_products')
+        .select()
+        .eq('slug', slug.trim())
+        .maybeSingle();
+
+    if (response == null) return null;
+    return Product.fromJson(Map<String, dynamic>.from(response));
+  }
+
   Future<Product?> getProductById(String id) async {
     final response = await _supabase
         .from('catalog_products')
@@ -64,6 +75,7 @@ class ProductRepository {
     required double retailPrice,
     required List<WholesaleTier> wholesaleTiers,
     required String imageUrl,
+    List<String> imageUrls = const [],
     required String category,
     String? slug,
     String stockStatus = 'In Stock',
@@ -75,19 +87,24 @@ class ProductRepository {
   }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('লগইন করা প্রয়োজন');
+    final images = <String>{
+      imageUrl.trim(),
+      ...imageUrls.map((image) => image.trim()),
+    }.where((image) => image.isNotEmpty).toList();
+    final normalizedSlug = _normalizeSlug(slug);
 
     final response = await _supabase
         .from('catalog_products')
         .insert({
           'source': 'paikari',
           'owner_id': user.id,
-          'slug': slug?.trim().isNotEmpty == true ? slug!.trim() : _makeSlug(name),
+          'slug': normalizedSlug ?? _makeSlug(name),
           'name': name.trim(),
           'description': description.trim(),
           'retail_price': retailPrice,
           'wholesale_tiers': wholesaleTiers.map((tier) => tier.toJson()).toList(),
-          'image_url': imageUrl.trim(),
-          'images': imageUrl.trim().isEmpty ? [] : [imageUrl.trim()],
+          'image_url': images.isEmpty ? '' : images.first,
+          'images': images,
           'category': category.trim(),
           'stock_status': stockStatus,
           'sku': sku?.trim().isEmpty == true ? null : sku?.trim(),
@@ -104,6 +121,15 @@ class ProductRepository {
 
     return Product.fromJson(Map<String, dynamic>.from(response));
   }
+}
+
+String? _normalizeSlug(String? value) {
+  final input = value?.trim().toLowerCase() ?? '';
+  if (input.isEmpty) return null;
+  final normalized = input
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  return normalized.isEmpty ? null : normalized;
 }
 
 String _makeSlug(String value) {

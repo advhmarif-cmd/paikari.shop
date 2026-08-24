@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
-import 'package:paikari_shop/core/widgets/product_image.dart';
+import 'package:paikari_shop/features/products/widgets/product_gallery.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
 import 'package:paikari_shop/features/inquiries/widgets/inquiry_sheet.dart';
 import 'package:paikari_shop/features/quotations/widgets/quotation_sheet.dart';
 import 'package:paikari_shop/features/vendors/models/vendor_profile.dart';
 import 'package:paikari_shop/features/vendors/providers/vendor_provider.dart';
+
+void _copyProductLink(BuildContext context, Product product) {
+  final slug = product.slug?.trim();
+  if (slug == null || slug.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('এই product-এর share link এখনো তৈরি হয়নি.')));
+    return;
+  }
+  final link = 'https://paikari.shop/p/${Uri.encodeComponent(slug)}';
+  Clipboard.setData(ClipboardData(text: link));
+  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product link কপি হয়েছে.')));
+}
 
 class ProductDetailScreen extends ConsumerWidget {
   final Product product;
@@ -22,7 +34,16 @@ class ProductDetailScreen extends ConsumerWidget {
     final vendorAsync = product.vendorId == null ? null : ref.watch(publicVendorProfileProvider(product.vendorId!));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('পণ্যের বিবরণ')),
+      appBar: AppBar(
+        title: const Text('পণ্যের বিবরণ'),
+        actions: [
+          IconButton(
+            tooltip: 'Product link কপি করুন',
+            icon: const Icon(Icons.link_outlined),
+            onPressed: () => _copyProductLink(context, product),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 20),
         child: Column(
@@ -30,11 +51,9 @@ class ProductDetailScreen extends ConsumerWidget {
           children: [
             Hero(
               tag: 'product-${product.id}',
-              child: ProductImage(
-                url: product.imageUrl,
-                height: 300,
-                width: double.infinity,
-                fit: BoxFit.cover,
+              child: ProductGallery(
+                images: product.images,
+                fallbackUrl: product.imageUrl,
               ),
             ),
             Padding(

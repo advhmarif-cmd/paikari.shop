@@ -32,6 +32,8 @@ class Product {
   final String category;
   final bool isAvailable;
   final String source;
+  final String? slug;
+  final List<String> images;
   final String? originProductId;
   final String? sku;
   final String unitLabel;
@@ -67,6 +69,8 @@ class Product {
     required this.category,
     required this.isAvailable,
     this.source = 'paikari',
+    this.slug,
+    this.images = const [],
     this.originProductId,
     this.sku,
     this.unitLabel = 'unit',
@@ -85,8 +89,9 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) {
     final rawTiers = (json['wholesaleTiers'] ?? json['wholesale_tiers'] ?? const []) as List<dynamic>;
     final rawImages = (json['images'] as List<dynamic>?) ?? const [];
+    final images = rawImages.whereType<String>().map((image) => image.trim()).where((image) => image.isNotEmpty).toList();
     final rawImageUrl = json['imageUrl'] ?? json['image_url'];
-    final imageUrl = rawImageUrl as String? ?? (rawImages.isNotEmpty ? rawImages.first as String : '');
+    final imageUrl = rawImageUrl as String? ?? (images.isNotEmpty ? images.first : '');
     final rawRetailPrice = json['retailPrice'] ?? json['retail_price'] ?? json['sale_price'];
     final rawAvailable = json['isAvailable'] ?? json['is_active'];
     final stockQuantity = (json['stock_quantity'] as num?)?.toInt();
@@ -109,6 +114,8 @@ class Product {
       category: (json['category'] ?? '') as String,
       isAvailable: (rawAvailable as bool? ?? true) && hasStock,
       source: (json['source'] ?? 'paikari') as String,
+      slug: json['slug'] as String?,
+      images: images,
       originProductId: json['origin_product_id'] as String?,
       sku: json['sku'] as String?,
       unitLabel: (json['unit_label'] ?? 'unit') as String,
@@ -136,6 +143,8 @@ class Product {
       'category': category,
       'isAvailable': isAvailable,
       'source': source,
+      'slug': slug,
+      'images': images,
       'origin_product_id': originProductId,
       'sku': sku,
       'unit_label': unitLabel,

@@ -4,6 +4,8 @@ import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/cart/models/cart_item.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
 import 'package:paikari_shop/features/checkout/models/address.dart';
+import 'package:paikari_shop/features/checkout/models/saved_address.dart';
+import 'package:paikari_shop/features/checkout/repositories/saved_address_repository.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart';
 import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
 import 'package:paikari_shop/l10n/generated/app_localizations.dart';
@@ -24,6 +26,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   String _selectedPaymentMethod = 'Cash on Delivery';
   String _selectedDeliveryZone = 'inside';
+  SavedAddress? _selectedSavedAddress;
+  bool _saveAddressForNextTime = false;
 
   @override
   void dispose() {
@@ -38,6 +42,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartProvider);
     final orderState = ref.watch(orderProvider);
+    final savedAddressesAsync = ref.watch(savedAddressesProvider);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -53,6 +58,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   children: [
                     _SectionHeading(icon: Icons.location_on_outlined, title: l10n.shippingAddress),
                     const SizedBox(height: 12),
+                    savedAddressesAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (savedAddresses) => savedAddresses.isEmpty
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedSavedAddress?.id,
+                                decoration: const InputDecoration(
+                                  labelText: 'সংরক্ষিত ঠিকানা ব্যবহার করুন',
+                                  prefixIcon: Icon(Icons.bookmark_border),
+                                ),
+                                items: savedAddresses
+                                    .map((saved) => DropdownMenuItem<String>(
+                                          value: saved.id,
+                                          child: Text(saved.label, overflow: TextOverflow.ellipsis),
+                                        ))
+                                    .toList(),
+                                onChanged: (id) {
+                                  if (id == null) return;
+                                  final selected = savedAddresses.firstWhere((saved) => saved.id == id);
+                                  _applySavedAddress(selected);
+                                },
+                              ),
+                            ),
+                    ),
                     _AddressForm(
                       districtController: _districtController,
                       thanaController: _thanaController,
@@ -62,7 +97,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       thanaLabel: l10n.thana,
                       phoneLabel: l10n.phone,
                     ),
-                    const SizedBox(height: 24),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: _saveAddressForNextTime,
+                      onChanged: (value) => setState(() => _saveAddressForNextTime = value),
+                      title: const Text('পরেরবারের জন্য ঠিকানা সংরক্ষণ করুন', style: TextStyle(fontWeight: FontWeight.w800)),
+                      subtitle: const Text('শুধু আপনার account-এ নিরাপদভাবে রাখা হবে'),
+                    ),
+                    const SizedBox(height: 12),
                     _SectionHeading(icon: Icons.local_shipping_outlined, title: 'ডেলিভারি এলাকা'),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
@@ -130,6 +172,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  void _applySavedAddress(SavedAddress savedAddress) {
+    final address = savedAddress.address;
+    setState(() {
+      _selectedSavedAddress = savedAddress;
+      _districtController.text = address.city;
+      _thanaController.text = address.state;
+      _streetController.text = address.streetAddress;
+      _phoneController.text = address.phoneNumber;
+    });
+  }
+
   Future<void> _submitOrder(CartState cartState) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -162,6 +215,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       zipCode: '',
       phoneNumber: _phoneController.text.trim(),
     );
+
+    if (_saveAddressForNextTime && _selectedSavedAddress == null) {
+      try {
+        final existing = ref.read(savedAddressesProvider).valueOrNull ?? const <SavedAddress>[];
+        await ref.read(savedAddressRepositoryProvider).save(
+          label: 'আমার ঠিকানা',
+          address: address,
+          isDefault: existing.isEmpty,
+        );
+        ref.invalidate(savedAddressesProvider);
+      } catch (_) {
+        // Address persistence must never block the server-authoritative order.
+      }
+    }
 
     final confirmedOrder = await ref.read(orderProvider.notifier).placeOrder(
           items: cartState.items.values.toList(),

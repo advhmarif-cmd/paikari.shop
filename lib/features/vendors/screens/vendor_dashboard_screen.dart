@@ -573,6 +573,7 @@ class _VendorProductFormScreenState extends ConsumerState<VendorProductFormScree
   final _wholesaleMin = TextEditingController();
   final _imageUrl = TextEditingController();
   final _category = TextEditingController();
+  final _slug = TextEditingController();
   final _sku = TextEditingController();
   final _unit = TextEditingController(text: 'unit');
   final _moq = TextEditingController(text: '1');
@@ -582,7 +583,7 @@ class _VendorProductFormScreenState extends ConsumerState<VendorProductFormScree
 
   @override
   void dispose() {
-    for (final controller in [_name, _description, _retailPrice, _wholesalePrice, _wholesaleMin, _imageUrl, _category, _sku, _unit, _moq, _stock]) {
+    for (final controller in [_name, _description, _retailPrice, _wholesalePrice, _wholesaleMin, _imageUrl, _category, _slug, _sku, _unit, _moq, _stock]) {
       controller.dispose();
     }
     super.dispose();
@@ -605,7 +606,9 @@ class _VendorProductFormScreenState extends ConsumerState<VendorProductFormScree
             const SizedBox(height: 12),
             _Field(controller: _category, label: 'Category', icon: Icons.category_outlined, validator: _required),
             const SizedBox(height: 12),
-            _Field(controller: _imageUrl, label: 'Image URL', icon: Icons.image_outlined, keyboardType: TextInputType.url),
+            _Field(controller: _slug, label: 'Product slug (optional)', icon: Icons.link_outlined),
+            const SizedBox(height: 12),
+            _Field(controller: _imageUrl, label: 'Image URLs (comma separated)', icon: Icons.image_outlined, keyboardType: TextInputType.url, maxLines: 3),
             const SizedBox(height: 12),
             _Field(controller: _sku, label: 'SKU (optional)', icon: Icons.qr_code_2_outlined),
             const SizedBox(height: 20),
@@ -669,13 +672,20 @@ class _VendorProductFormScreenState extends ConsumerState<VendorProductFormScree
       final tiers = wholesaleMin != null && wholesalePrice != null && wholesaleMin >= moq
           ? [WholesaleTier(minQuantity: wholesaleMin, price: wholesalePrice)]
           : <WholesaleTier>[];
+      final imageUrls = _imageUrl.text
+          .split(',')
+          .map((url) => url.trim())
+          .where((url) => url.isNotEmpty)
+          .toList();
       await ref.read(productRepositoryProvider).createLocalProduct(
             name: _name.text,
             description: _description.text,
             retailPrice: retailPrice,
             wholesaleTiers: tiers,
-            imageUrl: _imageUrl.text,
+            imageUrl: imageUrls.isEmpty ? '' : imageUrls.first,
+            imageUrls: imageUrls,
             category: _category.text,
+            slug: _slug.text,
             sku: _sku.text,
             unitLabel: _unit.text,
             moq: moq,

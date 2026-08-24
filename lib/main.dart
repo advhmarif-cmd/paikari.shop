@@ -11,6 +11,7 @@ import 'package:paikari_shop/features/auth/screens/signup_screen.dart';
 import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/products/screens/product_detail_screen.dart';
+import 'package:paikari_shop/features/products/screens/product_slug_screen.dart';
 import 'package:paikari_shop/features/products/widgets/product_card.dart';
 import 'package:paikari_shop/features/products/providers/product_provider.dart';
 import 'package:paikari_shop/features/checkout/screens/checkout_screen.dart';
@@ -65,6 +66,14 @@ class PaikariApp extends StatelessWidget {
       ],
       locale: const Locale('bn'),
       home: const AuthWrapper(),
+      onGenerateRoute: (settings) {
+        final name = settings.name ?? '';
+        if (name.startsWith('/p/')) {
+          final slug = Uri.decodeComponent(name.substring(3));
+          return MaterialPageRoute(builder: (_) => ProductSlugScreen(slug: slug));
+        }
+        return null;
+      },
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
@@ -166,6 +175,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _query = '';
   String _selectedCategory = 'সব';
   bool _businessMode = false;
+  bool _onlyAvailable = false;
+  bool _onlyWholesale = false;
+  String _sortMode = 'latest';
 
   @override
   void dispose() {
@@ -264,8 +276,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           (product.sku?.toLowerCase().contains(normalizedQuery) ?? false) ||
           (product.vendorName?.toLowerCase().contains(normalizedQuery) ?? false);
       final matchesCategory = _selectedCategory == 'সব' || product.category == _selectedCategory;
-      return matchesQuery && matchesCategory;
+      final matchesAvailability = !_onlyAvailable || product.isAvailable;
+      final matchesWholesale = !_onlyWholesale || product.wholesaleTiers.isNotEmpty;
+      return matchesQuery && matchesCategory && matchesAvailability && matchesWholesale;
     }).toList();
+
+    filteredProducts.sort((a, b) {
+      switch (_sortMode) {
+        case 'price_low':
+          return a.retailPrice.compareTo(b.retailPrice);
+        case 'price_high':
+          return b.retailPrice.compareTo(a.retailPrice);
+        case 'moq_low':
+          return a.moq.compareTo(b.moq);
+        default:
+          return 0;
+      }
+    });
 
     if (products.isEmpty) return const _EmptyCatalog();
 
@@ -331,6 +358,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         const SizedBox(height: 8),
+        SizedBox(
+          height: 44,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            children: [
+              FilterChip(
+                avatar: const Icon(Icons.inventory_2_outlined, size: 17),
+                label: const Text('শুধু available'),
+                selected: _onlyAvailable,
+                onSelected: (value) => setState(() => _onlyAvailable = value),
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                avatar: const Icon(Icons.sell_outlined, size: 17),
+                label: const Text('Wholesale'),
+                selected: _onlyWholesale,
+                onSelected: (value) => setState(() => _onlyWholesale = value),
+              ),
+              const SizedBox(width: 8),
+              _SortChip(
+                value: _sortMode,
+                onChanged: (value) => setState(() => _sortMode = value),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: filteredProducts.isEmpty
               ? const _EmptySearch()
@@ -388,6 +443,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       },
     );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _SortChip({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return InputChip(
+      avatar: const Icon(Icons.sort, size: 17),
+      label: Text(_sortLabel(value)),
+      onPressed: () async {
+        final selected = await showModalBottomSheet<String>(
+          context: context,
+          showDragHandle: true,
+          builder: (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ListTile(title: Text('পণ্য সাজান', style: TextStyle(fontWeight: FontWeight.w900))),
+                for (final option in const ['latest', 'price_low', 'price_high', 'moq_low'])
+                  RadioListTile<String>(
+                    value: option,
+                    groupValue: value,
+                    title: Text(_sortLabel(option)),
+                    onChanged: (next) => Navigator.pop(context, next),
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+        if (selected != null) onChanged(selected);
+      },
+    );
+  }
+}
+
+String _sortLabel(String value) {
+  switch (value) {
+    case 'price_low':
+      return 'দাম: কম থেকে বেশি';
+    case 'price_high':
+      return 'দাম: বেশি থেকে কম';
+    case 'moq_low':
+      return 'MOQ: কম থেকে বেশি';
+    default:
+      return 'সর্বশেষ যোগ করা';
   }
 }
 

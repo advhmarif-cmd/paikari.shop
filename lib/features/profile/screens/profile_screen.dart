@@ -11,6 +11,8 @@ import 'package:paikari_shop/features/quotations/repositories/quotation_reposito
 import 'package:paikari_shop/features/quotations/widgets/quote_checkout_sheet.dart';
 import 'package:paikari_shop/features/checkout/providers/order_provider.dart';
 import 'package:paikari_shop/features/checkout/models/order.dart';
+import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
+import 'package:paikari_shop/features/products/repositories/product_repository.dart';
 import 'package:paikari_shop/features/checkout/models/order_status_event.dart';
 import 'package:paikari_shop/features/notifications/models/marketplace_notification.dart';
 import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
@@ -147,6 +149,8 @@ class ProfileScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text('৳${order.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: PaikariTheme.primaryColor)),
+                                if (order.items.isNotEmpty)
+                                  TextButton(onPressed: () => _reorder(context, ref, order), child: const Text('আবার কিনুন')),
                                 if (order.orderGroupId != null && {OrderStatus.pending, OrderStatus.confirmed, OrderStatus.processing}.contains(order.status))
                                   TextButton(onPressed: () => _cancelOrder(context, ref, order), child: const Text('Cancel')),
                               ],
@@ -169,6 +173,44 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _reorder(BuildContext context, WidgetRef ref, Order order) async {
+  var addedCount = 0;
+  var skippedCount = 0;
+  final productRepository = ref.read(productRepositoryProvider);
+  final cartNotifier = ref.read(cartProvider.notifier);
+
+  for (final item in order.items) {
+    try {
+      final currentProduct = await productRepository.getProductById(item.product.id);
+      if (currentProduct == null || !currentProduct.isAvailable) {
+        skippedCount++;
+        continue;
+      }
+      cartNotifier.addItem(
+        currentProduct,
+        businessMode: item.businessMode,
+        quantity: item.quantity,
+      );
+      addedCount++;
+    } catch (_) {
+      skippedCount++;
+    }
+  }
+
+  if (!context.mounted) return;
+  if (addedCount == 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('এই order-এর কোনো পণ্য এখন available নেই।')),
+    );
+    return;
+  }
+  final message = skippedCount == 0
+      ? '$addedCount টি পণ্য cart-এ যোগ হয়েছে।'
+      : '$addedCount টি পণ্য যোগ হয়েছে; $skippedCount টি এখন available নেই।';
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  Navigator.pushNamed(context, '/cart');
 }
 
 Future<void> _cancelOrder(BuildContext context, WidgetRef ref, Order order) async {

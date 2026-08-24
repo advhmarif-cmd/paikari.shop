@@ -70,3 +70,12 @@ Flutter analyzer/test/build চালানো না গেলে release অ�
 ## Auth profile checks
 
 Authenticated login-এর পরে `public.users` profile row তৈরি/পড়া/আপডেট হচ্ছে কি না পরীক্ষা করতে হবে। অন্য authenticated user-এর profile query, anonymous access, profile delete এবং client-side role/KYC elevation প্রত্যাখ্যাত হচ্ছে কি না যাচাই করতে হবে। Network/profile-load failure-এ app ভুলভাবে Login screen-এ না পাঠিয়ে স্পষ্ট retry state দেখাবে।
+
+
+## New marketplace feature checks
+
+Product detail থেকে copy করা `https://paikari.shop/p/<slug>` link browser/share flow দিয়ে খুলে সঠিক product detail দেখাচ্ছে কি না যাচাই করতে হবে। Android App Links কাজ করার জন্য production domain-এ `/.well-known/assetlinks.json` publish করে package fingerprint মিলাতে হবে।
+
+Catalog-এ B2B/B2C switch, category chips, availability filter, wholesale filter এবং price/MOQ sorting ছোট Android screen-এ overflow ছাড়া কাজ করছে কি না পরীক্ষা করতে হবে। Product detail-এ multiple image swipe, fallback image এবং page indicator যাচাই করতে হবে।
+
+Checkout-এ saved address select, নতুন address save, own-user-only visibility এবং order submit-এর পরে saved address persistence পরীক্ষা করতে হবে। Profile order থেকে আবার কিনুন action current availability re-fetch করে unavailable product বাদ দিচ্ছে এবং পুরনো client-side price ব্যবহার করছে না—এটি যাচাই করতে হবে।

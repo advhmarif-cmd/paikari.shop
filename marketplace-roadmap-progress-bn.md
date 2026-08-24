@@ -90,3 +90,9 @@ Bangla QR checkout method এখন cart এবং accepted-quote checkout উ�
 
 ## Android UI polish pass — 24 August 2026
 Shared Material 3 theme-এ Bangla typography hierarchy, app bar, input fields, primary/secondary buttons, chips, dividers, list tiles, progress indicators এবং floating snackbars-এর consistent design tokens যোগ করা হয়েছে। Product card-এ screen-reader label ও tap hint যোগ হয়েছে; shimmer loading theme-aware হয়েছে; authenticated profile-load failure-এ clear retry state দেখানো হয়েছে। Checkout ও quote checkout-এ Bangla QR pending notice বজায় রেখে payment selection hierarchy consistent করা হয়েছে।
+
+
+## High-value buyer features — 24 August 2026
+Facebook/WhatsApp campaign-এর জন্য `/p/<slug>` product route, vendor-এর optional readable slug field এবং Android HTTPS intent filters যোগ করা হয়েছে। Product detail থেকে product link clipboard-এ copy করা যায়। Catalog-এ availability/wholesale filters এবং latest/price/MOQ sorting যোগ হয়েছে।
+
+Checkout-এ buyer নিজের saved delivery address select করতে বা পরেরবারের জন্য own-account address save করতে পারে; live `saved_addresses` table-এ authenticated own-row RLS আছে। Product model এখন multiple images parse করে এবং detail page swipe gallery দেখায়; vendor form comma-separated image URLs নেয়। Previous order card থেকে current catalog re-fetch করে unavailable items বাদ দিয়ে reorder করা যায়, ফলে পুরনো client-side price বা stock authoritative হিসেবে ব্যবহৃত হয় না।
