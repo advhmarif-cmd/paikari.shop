@@ -94,6 +94,18 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () => Navigator.pushNamed(context, '/support/policies'),
               ),
             ),
+            const SizedBox(height: 12),
+            Card(
+              margin: EdgeInsets.zero,
+              elevation: 0,
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.chat_bubble_outline)),
+                title: const Text('Seller chats', style: TextStyle(fontWeight: FontWeight.w800)),
+                subtitle: const Text('আপনার seller conversation দেখুন'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pushNamed(context, '/chats'),
+              ),
+            ),
             const SizedBox(height: 24),
             const Text('Recent updates', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 10),

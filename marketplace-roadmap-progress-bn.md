@@ -96,3 +96,9 @@ Shared Material 3 theme-এ Bangla typography hierarchy, app bar, input fields, 
 Facebook/WhatsApp campaign-এর জন্য `/p/<slug>` product route, vendor-এর optional readable slug field এবং Android HTTPS intent filters যোগ করা হয়েছে। Product detail থেকে product link clipboard-এ copy করা যায়। Catalog-এ availability/wholesale filters এবং latest/price/MOQ sorting যোগ হয়েছে।
 
 Checkout-এ buyer নিজের saved delivery address select করতে বা পরেরবারের জন্য own-account address save করতে পারে; live `saved_addresses` table-এ authenticated own-row RLS আছে। Product model এখন multiple images parse করে এবং detail page swipe gallery দেখায়; vendor form comma-separated image URLs নেয়। Previous order card থেকে current catalog re-fetch করে unavailable items বাদ দিয়ে reorder করা যায়, ফলে পুরনো client-side price বা stock authoritative হিসেবে ব্যবহৃত হয় না।
+
+
+## Seller-buyer chat — 24 August 2026
+Product detail থেকে B2C/B2B buyer seller chat শুরু করতে পারে; buyer profile-এ Seller chats inbox এবং Home app bar-এ unread chat badge যোগ হয়েছে। Vendor Center-এ Buyer chats shortcut আছে। Conversation product-centric, inbox row-তে product name/image snapshot, message bubble, timestamp, composer, read state এবং retry/empty states আছে। Inquiry/quotation workflow অপরিবর্তিত রেখে chat আলাদা lightweight communication layer হিসেবে রাখা হয়েছে।
+
+Live Supabase-এ `chat_conversations` ও `chat_messages` table RLS-enabled। Conversation read ও message read কেবল participant-এর জন্য; create/send/read RPC-তে authenticated-only execution, participant checks, active approved Paikari product ownership validation এবং 2,000-character message limit আছে। Chat tables Supabase Realtime publication-এ যুক্ত হয়েছে। Live verification-এ anonymous RPC execution false এবং authenticated execution true পাওয়া গেছে।

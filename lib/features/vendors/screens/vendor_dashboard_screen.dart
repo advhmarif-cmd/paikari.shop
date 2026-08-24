@@ -17,6 +17,9 @@ import 'package:paikari_shop/features/quotations/providers/quotation_provider.da
 import 'package:paikari_shop/features/quotations/repositories/quotation_repository.dart';
 import 'package:paikari_shop/features/returns/models/return_request.dart';
 import 'package:paikari_shop/features/returns/repositories/return_repository.dart';
+import 'package:paikari_shop/features/chat/screens/chat_screen.dart';
+import 'package:paikari_shop/features/chat/repositories/chat_repository.dart';
+import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
 
 class VendorDashboardScreen extends ConsumerWidget {
   const VendorDashboardScreen({super.key});
@@ -25,11 +28,33 @@ class VendorDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final vendorAsync = ref.watch(myVendorProfileProvider);
     final productsAsync = ref.watch(myLocalProductsProvider);
+    final vendorUserId = ref.read(authRepositoryProvider).currentUser?.id ?? '';
+    final unreadBuyerChats = ref.watch(vendorChatConversationsProvider).valueOrNull?.where((chat) => chat.isUnreadFor(vendorUserId)).length ?? 0;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vendor center'),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                tooltip: 'Buyer chats',
+                icon: const Icon(Icons.chat_bubble_outline),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatInboxScreen(isVendor: true))),
+              ),
+              if (unreadBuyerChats > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text('$unreadBuyerChats', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             tooltip: 'নতুন product',
             icon: const Icon(Icons.add_box_outlined),

@@ -79,3 +79,10 @@ Product detail থেকে copy করা `https://paikari.shop/p/<slug>` link 
 Catalog-এ B2B/B2C switch, category chips, availability filter, wholesale filter এবং price/MOQ sorting ছোট Android screen-এ overflow ছাড়া কাজ করছে কি না পরীক্ষা করতে হবে। Product detail-এ multiple image swipe, fallback image এবং page indicator যাচাই করতে হবে।
 
 Checkout-এ saved address select, নতুন address save, own-user-only visibility এবং order submit-এর পরে saved address persistence পরীক্ষা করতে হবে। Profile order থেকে আবার কিনুন action current availability re-fetch করে unavailable product বাদ দিচ্ছে এবং পুরনো client-side price ব্যবহার করছে না—এটি যাচাই করতে হবে।
+
+
+## Seller chat checks
+
+B2C ও B2B product detail থেকে seller chat শুরু করা, একই product-এর জন্য existing conversation পুনরায় খোলা, buyer ও vendor inbox-এ product name/image preview দেখা এবং নতুন message-এ unread badge আসা পরীক্ষা করতে হবে। Message পাঠানোর পরে realtime update, read state, keyboard/inset behavior, long message wrapping এবং empty/error/retry state যাচাই করতে হবে।
+
+অন্য buyer/vendor-এর conversation বা message দেখা/লেখা যায় কি না, anonymous user RPC চালাতে পারে কি না এবং 2,000 character-এর বেশি message প্রত্যাখ্যাত হচ্ছে কি না—এগুলোও Android-এর পাশাপাশি live Supabase security test-এ যাচাই করতে হবে।

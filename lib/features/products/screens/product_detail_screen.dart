@@ -7,6 +7,7 @@ import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/cart/providers/cart_provider.dart';
 import 'package:paikari_shop/features/inquiries/widgets/inquiry_sheet.dart';
 import 'package:paikari_shop/features/quotations/widgets/quotation_sheet.dart';
+import 'package:paikari_shop/features/chat/screens/chat_screen.dart';
 import 'package:paikari_shop/features/vendors/models/vendor_profile.dart';
 import 'package:paikari_shop/features/vendors/providers/vendor_provider.dart';
 
@@ -151,9 +152,29 @@ class ProductDetailScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (businessMode && product.vendorId != null) ...[
-              Row(
-                children: [
+            if (product.vendorId != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                        productId: product.id,
+                        vendorId: product.vendorId,
+                        productName: product.name,
+                        vendorName: product.vendorName,
+                      ),
+                    ),
+                  ),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Seller-এর সঙ্গে chat করুন'),
+                ),
+              ),
+              if (businessMode) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => showInquirySheet(context, ref, product),
@@ -177,9 +198,9 @@ class ProductDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
+                  ],
+                ),
+              ],
             ],
             SizedBox(
               width: double.infinity,

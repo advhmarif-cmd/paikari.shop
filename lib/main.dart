@@ -21,6 +21,8 @@ import 'package:paikari_shop/features/profile/screens/profile_screen.dart';
 import 'package:paikari_shop/features/notifications/screens/notifications_screen.dart';
 import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
 import 'package:paikari_shop/features/support/screens/legal_support_screen.dart';
+import 'package:paikari_shop/features/chat/screens/chat_screen.dart';
+import 'package:paikari_shop/features/chat/repositories/chat_repository.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_onboarding_screen.dart';
 import 'package:paikari_shop/features/vendors/screens/vendor_dashboard_screen.dart';
 import 'package:paikari_shop/features/buyer/screens/business_buyer_screen.dart';
@@ -87,6 +89,8 @@ class PaikariApp extends StatelessWidget {
         },
         '/profile': (context) => const ProfileScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        '/chats': (context) => const ChatInboxScreen(isVendor: false),
+        '/vendor/chats': (context) => const ChatInboxScreen(isVendor: true),
         '/support/policies': (context) => const LegalSupportScreen(),
         '/vendor/onboarding': (context) => const VendorOnboardingScreen(),
         '/vendor/dashboard': (context) => const VendorDashboardScreen(),
@@ -191,6 +195,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final productsAsync = ref.watch(productListProvider(_businessMode));
     final cartCount = ref.watch(cartProvider).itemCount;
     final unreadNotifications = ref.watch(myNotificationsProvider).valueOrNull?.where((item) => item.readAt == null).length ?? 0;
+    final userId = ref.watch(authRepositoryProvider).currentUser?.id ?? '';
+    final unreadChats = ref.watch(buyerChatConversationsProvider).valueOrNull?.where((chat) => chat.isUnreadFor(userId)).length ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -223,6 +229,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
                     constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                     child: Text('$unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                  ),
+                ),
+            ],
+          ),
+          Stack(
+            children: [
+              IconButton(
+                tooltip: 'Seller chats',
+                icon: const Icon(Icons.chat_bubble_outline),
+                onPressed: () => Navigator.pushNamed(context, '/chats'),
+              ),
+              if (unreadChats > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text('$unreadChats', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                   ),
                 ),
             ],
