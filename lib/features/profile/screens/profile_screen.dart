@@ -195,7 +195,7 @@ Future<void> _reorder(BuildContext context, WidgetRef ref, Order order) async {
 
   for (final item in order.items) {
     try {
-      final currentProduct = await productRepository.getProductById(item.product.id);
+      final currentProduct = await productRepository.getProductById(item.product.id, businessMode: item.businessMode);
       if (currentProduct == null || !currentProduct.isAvailable) {
         skippedCount++;
         continue;

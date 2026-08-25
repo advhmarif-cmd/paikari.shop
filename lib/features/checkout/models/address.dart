@@ -25,11 +25,23 @@ class Address {
 
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
-      streetAddress: json['streetAddress'] as String,
-      city: json['city'] as String,
-      state: json['state'] as String,
-      zipCode: json['zipCode'] as String,
-      phoneNumber: json['phoneNumber'] as String,
+      streetAddress: _readString(json, 'streetAddress', 'street_address'),
+      city: _readString(json, 'city', 'district'),
+      state: _readString(json, 'state', 'thana'),
+      zipCode: _readString(json, 'zipCode', 'zip_code'),
+      phoneNumber: _readString(json, 'phoneNumber', 'phone_number', 'phone'),
     );
+  }
+
+  static String _readString(
+    Map<String, dynamic> json,
+    String key, [
+    String? alternateKey,
+    String? secondAlternateKey,
+  ]) {
+    final value = json[key] ??
+        (alternateKey == null ? null : json[alternateKey]) ??
+        (secondAlternateKey == null ? null : json[secondAlternateKey]);
+    return value?.toString().trim() ?? '';
   }
 }

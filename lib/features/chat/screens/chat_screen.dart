@@ -104,7 +104,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Expanded(
             child: messagesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => _ChatStateScreen(message: 'Message load করা যায়নি: $error', onRetry: () => ref.invalidate(chatMessagesProvider(conversationId))),
+              error: (error, stack) => _ChatStatePanel(message: 'Message load করা যায়নি: $error', onRetry: () => ref.invalidate(chatMessagesProvider(conversationId))),
               data: (messages) {
                 if (messages.isEmpty) {
                   return const _ChatEmptyState();
@@ -266,6 +266,34 @@ class _ChatEmptyState extends StatelessWidget {
   }
 }
 
+class _ChatStatePanel extends StatelessWidget {
+  final String message;
+  final VoidCallback? onRetry;
+
+  const _ChatStatePanel({required this.message, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.chat_bubble_outline, size: 54),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('আবার চেষ্টা করুন')),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatStateScreen extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -276,23 +304,7 @@ class _ChatStateScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Seller chat')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.chat_bubble_outline, size: 54),
-              const SizedBox(height: 12),
-              Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
-              if (onRetry != null) ...[
-                const SizedBox(height: 16),
-                OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('আবার চেষ্টা করুন')),
-              ],
-            ],
-          ),
-        ),
-      ),
+      body: _ChatStatePanel(message: message, onRetry: onRetry),
     );
   }
 }
@@ -310,10 +322,10 @@ class ChatInboxScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(isVendor ? 'Buyer chats' : 'Seller chats')),
       body: conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _ChatStateScreen(message: 'Chat list load করা যায়নি: $error', onRetry: () => ref.invalidate(isVendor ? vendorChatConversationsProvider : buyerChatConversationsProvider)),
+        error: (error, stack) => _ChatStatePanel(message: 'Chat list load করা যায়নি: $error', onRetry: () => ref.invalidate(isVendor ? vendorChatConversationsProvider : buyerChatConversationsProvider)),
         data: (conversations) {
           if (conversations.isEmpty) {
-            return const _ChatStateScreen(message: 'এখনও কোনো chat নেই।');
+            return const _ChatStatePanel(message: 'এখনও কোনো chat নেই।');
           }
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),

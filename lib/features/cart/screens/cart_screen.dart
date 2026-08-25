@@ -14,6 +14,8 @@ class CartScreen extends ConsumerWidget {
     final cartState = ref.watch(cartProvider);
     final l10n = AppLocalizations.of(context)!;
     final items = cartState.items.values.toList();
+    final hasB2bItems = items.any((item) => item.businessMode);
+    final hasB2cItems = items.any((item) => !item.businessMode);
 
     return Scaffold(
       appBar: AppBar(
@@ -41,7 +43,11 @@ class CartScreen extends ConsumerWidget {
                           Text('${items.length} টি পণ্য', style: const TextStyle(fontWeight: FontWeight.w800)),
                           const SizedBox(height: 3),
                           Text(
-                            items.any((item) => item.businessMode) ? 'B2B cart · MOQ প্রযোজ্য' : 'B2C cart',
+                            hasB2bItems && hasB2cItems
+                                ? 'B2B + B2C cart · আলাদা checkout প্রয়োজন'
+                                : hasB2bItems
+                                    ? 'B2B cart · MOQ প্রযোজ্য'
+                                    : 'B2C cart',
                             style: TextStyle(color: PaikariTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.w800),
                           ),
                         ],

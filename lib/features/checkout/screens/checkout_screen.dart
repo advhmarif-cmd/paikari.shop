@@ -187,6 +187,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final items = cartState.items.values.toList();
+    final hasB2bItems = items.any((item) => item.businessMode);
+    final hasB2cItems = items.any((item) => !item.businessMode);
+    if (hasB2bItems && hasB2cItems) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('B2B ও B2C পণ্য একসাথে checkout করা যাবে না। Cart থেকে একটি mode-এর পণ্য রাখুন।'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
     CartItem? moqViolation;
     for (final item in items) {
       if (item.businessMode && item.quantity < item.product.moq) {

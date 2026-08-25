@@ -30,27 +30,15 @@ class ProductRepository {
     return Product.fromJson(Map<String, dynamic>.from(response));
   }
 
-  Future<Product?> getProductById(String id) async {
+  Future<Product?> getProductById(String id, {bool businessMode = false}) async {
     final response = await _supabase
-        .from('catalog_products')
+        .from(businessMode ? 'b2b_products' : 'b2c_products')
         .select()
         .eq('id', id)
-        .eq('is_active', true)
         .maybeSingle();
 
     if (response == null) return null;
     return Product.fromJson(Map<String, dynamic>.from(response));
-  }
-
-  Stream<List<Product>> watchProducts() {
-    return _supabase
-        .from('catalog_products')
-        .stream(primaryKey: ['id'])
-        .eq('is_active', true)
-        .order('updated_at', ascending: false)
-        .map((data) => data
-            .map((json) => Product.fromJson(Map<String, dynamic>.from(json)))
-            .toList());
   }
 
   Future<List<Product>> getMyLocalProducts() async {
