@@ -2,36 +2,37 @@ name: paikari_shop
 description: A marketplace app for the Bangladesh market (B2B & B2C).
 version: 1.0.0+1
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.10.0 <4.0.0'
+  flutter: '>=3.38.1'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  google_fonts: ^6.2.0
-  intl: ^0.20.2
+  google_fonts: ^6.3.3
+  intl: ^0.20.3
   flutter_riverpod: ^2.6.1
   riverpod: ^2.6.1
   state_notifier: ^1.0.0
-  riverpod_annotation: ^2.3.5
-  firebase_core: ^4.3.0
+  riverpod_annotation: ^2.6.1
+  firebase_core: ^4.14.0
   json_annotation: ^4.9.0
   freezed_annotation: ^3.1.0
   shimmer: ^3.0.0
-  firebase_storage: ^13.0.5
-  image_picker: ^1.1.2
-  file_picker: ^10.3.8
-  supabase_flutter: ^2.8.1
+  firebase_storage: ^13.5.0
+  image_picker: ^1.2.3
+  file_picker: ^10.3.10
+  supabase_flutter: ^2.17.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  build_runner: ^2.4.9
+  build_runner: ^2.15.1
   # riverpod_generator temporarily removed to allow freezed/analyzer upgrades
   # riverpod_generator: ^4.0.0
-  json_serializable: ^6.8.0
+  json_serializable: ^6.11.2
   freezed: 3.2.3
   # custom_lint temporarily removed to allow analyzer/dependency upgrades
   # custom_lint: ^0.8.1

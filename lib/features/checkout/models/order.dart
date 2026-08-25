@@ -2,7 +2,14 @@ import 'package:paikari_shop/features/cart/models/cart_item.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
 import 'package:paikari_shop/features/checkout/models/address.dart';
 
-enum OrderStatus { pending, confirmed, processing, shipped, delivered, cancelled }
+enum OrderStatus {
+  pending,
+  confirmed,
+  processing,
+  shipped,
+  delivered,
+  cancelled
+}
 
 class Order {
   final String id;
@@ -34,8 +41,10 @@ class Order {
   });
 
   factory Order.fromSupabase(Map<String, dynamic> data) {
-    final buyerMode = (data['buyer_mode'] as String? ?? 'b2c').toLowerCase();
-    final rawItems = (data['items'] as List<dynamic>? ?? const []);
+    final buyerMode = (data['buyer_mode']?.toString() ?? 'b2c').toLowerCase();
+    final rawItems = data['items'] is List<dynamic>
+        ? data['items'] as List<dynamic>
+        : const <dynamic>[];
     final items = rawItems.map((rawItem) {
       final item = Map<String, dynamic>.from(rawItem as Map);
       final productId = item['productId'] as String? ?? '';
@@ -55,7 +64,8 @@ class Order {
           vendorId: item['vendorId'] as String?,
         ),
         quantity: (item['quantity'] as num?)?.toInt() ?? 1,
-        businessMode: (item['buyerMode'] as String? ?? buyerMode) == 'b2b',
+        businessMode:
+            (item['buyerMode']?.toString().toLowerCase() ?? buyerMode) == 'b2b',
       );
     }).toList();
 
@@ -73,7 +83,8 @@ class Order {
       paymentStatus: data['payment_status'] as String? ?? 'unpaid',
       paymentReference: data['payment_reference'] as String?,
       paidAt: DateTime.tryParse(data['paid_at'] as String? ?? ''),
-      createdAt: DateTime.tryParse(data['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(data['created_at'] as String? ?? '') ??
+          DateTime.now(),
       status: OrderStatus.values.firstWhere(
         (status) => status.name == rawStatus,
         orElse: () => OrderStatus.pending,

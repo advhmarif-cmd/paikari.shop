@@ -11,7 +11,8 @@ class _QuoteCheckoutSheet extends ConsumerStatefulWidget {
   const _QuoteCheckoutSheet({required this.sessionId});
 
   @override
-  ConsumerState<_QuoteCheckoutSheet> createState() => _QuoteCheckoutSheetState();
+  ConsumerState<_QuoteCheckoutSheet> createState() =>
+      _QuoteCheckoutSheetState();
 }
 
 class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
@@ -36,11 +37,23 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final sessionState = ref.watch(quoteCheckoutSessionProvider(widget.sessionId));
+    final sessionState =
+        ref.watch(quoteCheckoutSessionProvider(widget.sessionId));
     return sessionState.when(
-      loading: () => const SafeArea(child: Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))),
-      error: (error, _) => SafeArea(child: Padding(padding: const EdgeInsets.all(24), child: Text('Quote details load করা যায়নি: $error'))),
-      data: (session) => session == null ? const SafeArea(child: Padding(padding: EdgeInsets.all(24), child: Text('Quote checkout পাওয়া যায়নি।'))) : _buildContent(context, session),
+      loading: () => const SafeArea(
+          child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()))),
+      error: (error, _) => SafeArea(
+          child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Quote details load করা যায়নি: $error'))),
+      data: (session) => session == null
+          ? const SafeArea(
+              child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Quote checkout পাওয়া যায়নি।')))
+          : _buildContent(context, session),
     );
   }
 
@@ -54,34 +67,87 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
         child: ListView(
           shrinkWrap: true,
           children: [
-            const Text('Quote checkout', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+            const Text('Quote checkout',
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
             const SizedBox(height: 5),
-            Text('${session.quantity} units · ৳${session.unitPrice.toStringAsFixed(0)} / unit', style: TextStyle(color: Colors.grey.shade700)),
+            Text(
+                '${session.quantity} units · ৳${session.unitPrice.toStringAsFixed(0)} / unit',
+                style: TextStyle(color: Colors.grey.shade700)),
             const SizedBox(height: 4),
-            Text('Agreed delivery: ৳${session.deliveryCharge.toStringAsFixed(0)} · Total: ৳${session.totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+                'Agreed delivery: ৳${session.deliveryCharge.toStringAsFixed(0)} · Total: ৳${session.totalAmount.toStringAsFixed(0)}',
+                style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text(canCheckout ? 'Valid until ${DateFormat('dd MMM yyyy, hh:mm a').format(session.expiresAt.toLocal())}' : 'এই quote session আর ব্যবহারযোগ্য নয় (${session.status})', style: TextStyle(color: canCheckout ? Colors.green.shade700 : Colors.red.shade700)),
+            Text(
+                canCheckout
+                    ? 'Valid until ${DateFormat('dd MMM yyyy, hh:mm a').format(session.expiresAt.toLocal())}'
+                    : 'এই quote session আর ব্যবহারযোগ্য নয় (${session.status})',
+                style: TextStyle(
+                    color: canCheckout
+                        ? Colors.green.shade700
+                        : Colors.red.shade700)),
             const SizedBox(height: 16),
             if (canCheckout) ...[
-              TextFormField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone number', prefixIcon: Icon(Icons.phone_outlined)), validator: _required),
+              TextFormField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                      labelText: 'Phone number',
+                      prefixIcon: Icon(Icons.phone_outlined)),
+                  validator: _required),
               const SizedBox(height: 10),
-              TextFormField(controller: _street, decoration: const InputDecoration(labelText: 'Address', prefixIcon: Icon(Icons.home_outlined)), validator: _required),
+              TextFormField(
+                  controller: _street,
+                  decoration: const InputDecoration(
+                      labelText: 'Address',
+                      prefixIcon: Icon(Icons.home_outlined)),
+                  validator: _required),
               const SizedBox(height: 10),
-              Row(children: [Expanded(child: TextFormField(controller: _city, decoration: const InputDecoration(labelText: 'District'), validator: _required)), const SizedBox(width: 10), Expanded(child: TextFormField(controller: _state, decoration: const InputDecoration(labelText: 'Thana/Upazila'), validator: _required)]),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _city,
+                      decoration: const InputDecoration(labelText: 'District'),
+                      validator: _required,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _state,
+                      decoration:
+                          const InputDecoration(labelText: 'Thana/Upazila'),
+                      validator: _required,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
-              TextFormField(controller: _zip, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Postal code'), validator: _required),
+              TextFormField(
+                  controller: _zip,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Postal code'),
+                  validator: _required),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: _paymentMethod,
-                decoration: const InputDecoration(labelText: 'Payment method', prefixIcon: Icon(Icons.payments_outlined)),
+                initialValue: _paymentMethod,
+                decoration: const InputDecoration(
+                    labelText: 'Payment method',
+                    prefixIcon: Icon(Icons.payments_outlined)),
                 items: const [
-                  DropdownMenuItem(value: 'Cash on Delivery', child: Text('Cash on Delivery')),
+                  DropdownMenuItem(
+                      value: 'Cash on Delivery',
+                      child: Text('Cash on Delivery')),
                   DropdownMenuItem(value: 'Bkash', child: Text('Bkash')),
-                  DropdownMenuItem(value: 'Bangla QR', child: Text('Bangla QR')),
+                  DropdownMenuItem(
+                      value: 'Bangla QR', child: Text('Bangla QR')),
                 ],
-                onChanged: (value) => setState(() => _paymentMethod = value ?? 'Cash on Delivery'),
+                onChanged: (value) => setState(
+                    () => _paymentMethod = value ?? 'Cash on Delivery'),
               ),
-              if (_paymentMethod == 'Bkash' || _paymentMethod == 'Bangla QR') ...[
+              if (_paymentMethod == 'Bkash' ||
+                  _paymentMethod == 'Bangla QR') ...[
                 const SizedBox(height: 8),
                 Text(
                   _paymentMethod == 'Bangla QR'
@@ -95,8 +161,15 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
                 height: 54,
                 child: ElevatedButton.icon(
                   onPressed: _saving ? null : _submit,
-                  icon: _saving ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.lock_outline),
-                  label: Text(_saving ? 'Order হচ্ছে...' : 'Quote দিয়ে order করুন', style: const TextStyle(fontWeight: FontWeight.w900)),
+                  icon: _saving
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.lock_outline),
+                  label: Text(
+                      _saving ? 'Order হচ্ছে...' : 'Quote দিয়ে order করুন',
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
                 ),
               ),
             ],
@@ -106,30 +179,36 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
     );
   }
 
-  String? _required(String? value) => value == null || value.trim().isEmpty ? 'এই ঘরটি পূরণ করুন' : null;
+  String? _required(String? value) =>
+      value == null || value.trim().isEmpty ? 'এই ঘরটি পূরণ করুন' : null;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      final order = await ref.read(orderRepositoryProvider).checkoutAcceptedQuote(
-            checkoutSessionId: widget.sessionId,
-            shippingAddress: {
-              'phoneNumber': _phone.text.trim(),
-              'streetAddress': _street.text.trim(),
-              'city': _city.text.trim(),
-              'state': _state.text.trim(),
-              'zipCode': _zip.text.trim(),
-            },
-            paymentMethod: _paymentMethod,
-          );
+      final order =
+          await ref.read(orderRepositoryProvider).checkoutAcceptedQuote(
+                checkoutSessionId: widget.sessionId,
+                shippingAddress: {
+                  'phoneNumber': _phone.text.trim(),
+                  'streetAddress': _street.text.trim(),
+                  'city': _city.text.trim(),
+                  'state': _state.text.trim(),
+                  'zipCode': _zip.text.trim(),
+                },
+                paymentMethod: _paymentMethod,
+              );
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       Navigator.pop(context);
-      messenger.showSnackBar(SnackBar(content: Text('Order #${order.id.substring(0, 8)} তৈরি হয়েছে'), behavior: SnackBarBehavior.floating));
+      messenger.showSnackBar(SnackBar(
+          content: Text('Order #${order.id.substring(0, 8)} তৈরি হয়েছে'),
+          behavior: SnackBarBehavior.floating));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Quote order করা যায়নি: $error'), behavior: SnackBarBehavior.floating));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Quote order করা যায়নি: $error'),
+          behavior: SnackBarBehavior.floating));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

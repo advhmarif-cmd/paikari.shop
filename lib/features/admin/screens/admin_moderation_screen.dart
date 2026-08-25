@@ -8,7 +8,8 @@ class AdminModerationScreen extends ConsumerStatefulWidget {
   const AdminModerationScreen({super.key});
 
   @override
-  ConsumerState<AdminModerationScreen> createState() => _AdminModerationScreenState();
+  ConsumerState<AdminModerationScreen> createState() =>
+      _AdminModerationScreenState();
 }
 
 class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
@@ -31,30 +32,60 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin moderation'),
-        actions: [IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh), tooltip: 'Refresh')],
+        actions: [
+          IconButton(
+              onPressed: _loading ? null : _load,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh')
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : !_isAdmin
-              ? const Center(child: _AdminStatePanel(icon: Icons.lock_outline, title: 'Admin access required', message: 'এই অংশটি কেবল অনুমোদিত admin account-এর জন্য।'))
+              ? const Center(
+                  child: _AdminStatePanel(
+                      icon: Icons.lock_outline,
+                      title: 'Admin access required',
+                      message: 'এই অংশটি কেবল অনুমোদিত admin account-এর জন্য।'))
               : _error != null
-                  ? Center(child: _AdminStatePanel(icon: Icons.cloud_off_outlined, title: 'ডেটা লোড করা যায়নি', message: 'ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।', actionLabel: 'আবার চেষ্টা করুন', onAction: _load))
+                  ? Center(
+                      child: _AdminStatePanel(
+                          icon: Icons.cloud_off_outlined,
+                          title: 'ডেটা লোড করা যায়নি',
+                          message:
+                              'ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।',
+                          actionLabel: 'আবার চেষ্টা করুন',
+                          onAction: _load))
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                         children: [
                           _sectionTitle('Vendor verification'),
-                          if (_vendors.isEmpty) _emptyQueue('এখনও কোনো vendor verification queue নেই') else ..._vendors.map(_vendorCard),
+                          if (_vendors.isEmpty)
+                            _emptyQueue(
+                                'এখনও কোনো vendor verification queue নেই')
+                          else
+                            ..._vendors.map(_vendorCard),
                           const SizedBox(height: 24),
                           _sectionTitle('Local product approval'),
-                          if (_products.isEmpty) _emptyQueue('এখনও কোনো product approval queue নেই') else ..._products.map(_productCard),
+                          if (_products.isEmpty)
+                            _emptyQueue('এখনও কোনো product approval queue নেই')
+                          else
+                            ..._products.map(_productCard),
                           const SizedBox(height: 24),
                           _sectionTitle('Payment reconciliation'),
-                          if (_payments.isEmpty) _emptyQueue('এখনও কোনো payment reconciliation queue নেই') else ..._payments.map(_paymentCard),
+                          if (_payments.isEmpty)
+                            _emptyQueue(
+                                'এখনও কোনো payment reconciliation queue নেই')
+                          else
+                            ..._payments.map(_paymentCard),
                           const SizedBox(height: 24),
                           _sectionTitle('Returns and disputes'),
-                          if (_returns.isEmpty) _emptyQueue('এখনও কোনো return বা dispute নেই') else ..._returns.map(_returnCard),
+                          if (_returns.isEmpty)
+                            _emptyQueue('এখনও কোনো return বা dispute নেই')
+                          else
+                            ..._returns.map(_returnCard),
                         ],
                       ),
                     ),
@@ -63,7 +94,8 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
 
   Widget _sectionTitle(String title) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        child: Text(title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
       );
 
   Widget _emptyQueue(String message) => Padding(
@@ -78,7 +110,11 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
               children: [
                 Icon(Icons.inbox_outlined, color: Colors.grey.shade500),
                 const SizedBox(width: 12),
-                Expanded(child: Text(message, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w700))),
+                Expanded(
+                    child: Text(message,
+                        style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w700))),
               ],
             ),
           ),
@@ -90,9 +126,13 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        title: Text(vendor['store_name'] as String? ?? 'Vendor store', style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(vendor['store_name'] as String? ?? 'Vendor store',
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text('${vendor['city'] as String? ?? 'বাংলাদেশ'} · $status'),
-        trailing: _statusMenu(status, const ['pending', 'verified', 'rejected', 'suspended'], (next) => _updateVendor(vendor['user_id'] as String, next)),
+        trailing: _statusMenu(
+            status,
+            const ['pending', 'verified', 'rejected', 'suspended'],
+            (next) => _updateVendor(vendor['user_id'] as String, next)),
       ),
     );
   }
@@ -102,45 +142,75 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        title: Text(product['name'] as String? ?? 'Local product', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(product['name'] as String? ?? 'Local product',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text('${product['sku'] as String? ?? 'No SKU'} · $status'),
-        trailing: _statusMenu(status, const ['pending', 'approved', 'rejected', 'suspended'], (next) => _updateProduct(product['id'] as String, next)),
+        trailing: _statusMenu(
+            status,
+            const ['pending', 'approved', 'rejected', 'suspended'],
+            (next) => _updateProduct(product['id'] as String, next)),
       ),
     );
   }
 
   Widget _paymentCard(Map<String, dynamic> payment) {
     final status = payment['status'] as String? ?? 'unpaid';
-    final provider = payment['provider'] as String? ?? payment['payment_method'] as String? ?? 'Unknown';
+    final provider = payment['provider'] as String? ??
+        payment['payment_method'] as String? ??
+        'Unknown';
     final reference = payment['provider_reference'] as String?;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        leading: Icon(status == 'paid' ? Icons.check_circle_outline : Icons.payments_outlined, color: status == 'paid' ? Colors.green : null),
-        title: Text('৳${(payment['amount'] as num?)?.toStringAsFixed(0) ?? '0'} · $status', style: const TextStyle(fontWeight: FontWeight.w800)),
+        leading: Icon(
+            status == 'paid'
+                ? Icons.check_circle_outline
+                : Icons.payments_outlined,
+            color: status == 'paid' ? Colors.green : null),
+        title: Text(
+            '৳${(payment['amount'] as num?)?.toStringAsFixed(0) ?? '0'} · $status',
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text('$provider${reference == null ? '' : '\\n$reference'}'),
       ),
     );
   }
 
   Widget _returnCard(ReturnRequest request) {
-    final statuses = const ['approved', 'rejected', 'received', 'refunded'];
-    final current = statuses.contains(request.status) ? request.status : statuses.first;
+    final statuses = <String>[
+      if (request.status == 'requested') 'requested',
+      'approved',
+      'rejected',
+      'received',
+      'refunded',
+      if (request.status == 'cancelled') 'cancelled',
+    ];
+    final current =
+        statuses.contains(request.status) ? request.status : statuses.first;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        title: Text('${request.status} · ${request.reason}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text('${request.status} · ${request.reason}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Text('Order group: ${request.orderGroupId}'),
-        trailing: _statusMenu(current, statuses, (next) => _updateReturn(request.id, next)),
+        trailing: _statusMenu(
+            current, statuses, (next) => _updateReturn(request.id, next)),
       ),
     );
   }
 
-  Widget _statusMenu(String current, List<String> statuses, Future<void> Function(String) onChanged) {
+  Widget _statusMenu(String current, List<String> statuses,
+      Future<void> Function(String) onChanged) {
     return DropdownButton<String>(
       value: statuses.contains(current) ? current : statuses.first,
       underline: const SizedBox.shrink(),
-      items: statuses.map((status) => DropdownMenuItem(value: status, child: Text(_statusLabel(status)))).toList(),
+      items: statuses
+          .map((status) => DropdownMenuItem(
+              value: status, child: Text(_statusLabel(status))))
+          .toList(),
       onChanged: (value) {
         if (value != null && value != current) onChanged(value);
       },
@@ -156,7 +226,12 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
       final repository = ref.read(adminModerationRepositoryProvider);
       final isAdmin = await repository.isAdmin();
       if (!isAdmin) {
-        if (mounted) setState(() { _isAdmin = false; _loading = false; });
+        if (mounted) {
+          setState(() {
+            _isAdmin = false;
+            _loading = false;
+          });
+        }
         return;
       }
       final vendors = await repository.listVendors();
@@ -183,35 +258,43 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
 
   Future<void> _updateVendor(String vendorId, String status) async {
     try {
-      await ref.read(adminModerationRepositoryProvider).updateVendorStatus(vendorId: vendorId, status: status);
+      await ref
+          .read(adminModerationRepositoryProvider)
+          .updateVendorStatus(vendorId: vendorId, status: status);
       await _load();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vendor status update করা যায়নি: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Vendor status update করা যায়নি: $error')));
     }
   }
 
   Future<void> _updateReturn(String returnRequestId, String status) async {
     try {
-      await ref.read(returnRepositoryProvider).respond(returnRequestId: returnRequestId, status: status);
+      await ref
+          .read(returnRepositoryProvider)
+          .respond(returnRequestId: returnRequestId, status: status);
       await _load();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Return status update করা যায়নি: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Return status update করা যায়নি: $error')));
     }
   }
 
   Future<void> _updateProduct(String productId, String status) async {
     try {
-      await ref.read(adminModerationRepositoryProvider).updateProductStatus(productId: productId, status: status);
+      await ref
+          .read(adminModerationRepositoryProvider)
+          .updateProductStatus(productId: productId, status: status);
       await _load();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product status update করা যায়নি: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Product status update করা যায়নি: $error')));
     }
   }
 }
-
 
 class _AdminStatePanel extends StatelessWidget {
   final IconData icon;
@@ -237,12 +320,20 @@ class _AdminStatePanel extends StatelessWidget {
         children: [
           Icon(icon, size: 52, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 12),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(title,
+              textAlign: TextAlign.center,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 16),
-            FilledButton.icon(onPressed: onAction, icon: const Icon(Icons.refresh), label: Text(actionLabel!)),
+            FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.refresh),
+                label: Text(actionLabel!)),
           ],
         ],
       ),

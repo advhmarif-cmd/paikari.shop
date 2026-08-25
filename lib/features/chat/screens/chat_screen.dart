@@ -42,7 +42,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       Future.microtask(_createConversation);
     } else {
       _initializing = false;
-      Future.microtask(() => ref.read(chatRepositoryProvider).markRead(_conversationId!));
+      Future.microtask(
+          () => ref.read(chatRepositoryProvider).markRead(_conversationId!));
     }
   }
 
@@ -55,7 +56,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _createConversation() async {
     if (widget.productId == null || widget.vendorId == null) {
-      if (mounted) setState(() { _initializing = false; _error = 'এই product-এর seller chat available নয়।'; });
+      if (mounted) {
+        setState(() {
+          _initializing = false;
+          _error = 'এই product-এর seller chat available নয়।';
+        });
+      }
       return;
     }
     try {
@@ -64,11 +70,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             vendorId: widget.vendorId!,
           );
       if (!mounted) return;
-      setState(() { _conversationId = id; _initializing = false; });
+      setState(() {
+        _conversationId = id;
+        _initializing = false;
+      });
       await ref.read(chatRepositoryProvider).markRead(id);
     } catch (error) {
       if (!mounted) return;
-      setState(() { _initializing = false; _error = 'Chat শুরু করা যায়নি: $error'; });
+      setState(() {
+        _initializing = false;
+        _error = 'Chat শুরু করা যায়নি: $error';
+      });
     }
   }
 
@@ -79,12 +91,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (conversationId == null) {
-      return _ChatStateScreen(message: _error ?? 'Chat conversation পাওয়া যায়নি।', onRetry: widget.conversationId == null ? _createConversation : null);
+      return _ChatStateScreen(
+          message: _error ?? 'Chat conversation পাওয়া যায়নি।',
+          onRetry: widget.conversationId == null ? _createConversation : null);
     }
 
     final messagesAsync = ref.watch(chatMessagesProvider(conversationId));
     ref.listen(chatMessagesProvider(conversationId), (_, next) {
-      if (next.hasValue) ref.read(chatRepositoryProvider).markRead(conversationId);
+      if (next.hasValue) {
+        ref.read(chatRepositoryProvider).markRead(conversationId);
+      }
     });
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
@@ -93,9 +109,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.vendorName ?? (widget.isVendor ? 'Buyer chat' : 'Seller chat'), style: const TextStyle(fontSize: 18)),
+            Text(
+                widget.vendorName ??
+                    (widget.isVendor ? 'Buyer chat' : 'Seller chat'),
+                style: const TextStyle(fontSize: 18)),
             if (widget.productName != null)
-              Text(widget.productName!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+              Text(widget.productName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -104,13 +127,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Expanded(
             child: messagesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => _ChatStatePanel(message: 'Message load করা যায়নি: $error', onRetry: () => ref.invalidate(chatMessagesProvider(conversationId))),
+              error: (error, stack) => _ChatStatePanel(
+                  message: 'Message load করা যায়নি: $error',
+                  onRetry: () =>
+                      ref.invalidate(chatMessagesProvider(conversationId))),
               data: (messages) {
                 if (messages.isEmpty) {
                   return const _ChatEmptyState();
                 }
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients) _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                  if (_scrollController.hasClients) {
+                    _scrollController
+                        .jumpTo(_scrollController.position.maxScrollExtent);
+                  }
                 });
                 return ListView.builder(
                   controller: _scrollController,
@@ -128,7 +157,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             controller: _messageController,
             sending: _sending,
             onSend: _sendMessage,
-            hintText: widget.isVendor ? 'Buyer-কে message লিখুন' : 'Seller-কে message লিখুন',
+            hintText: widget.isVendor
+                ? 'Buyer-কে message লিখুন'
+                : 'Seller-কে message লিখুন',
           ),
         ],
       ),
@@ -140,15 +171,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final conversationId = _conversationId;
     if (body.isEmpty || conversationId == null || _sending) return;
     if (body.length > 2000) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Message সর্বোচ্চ ২০০০ character হতে পারে।')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Message সর্বোচ্চ ২০০০ character হতে পারে।')));
       return;
     }
     setState(() => _sending = true);
     try {
-      await ref.read(chatRepositoryProvider).sendMessage(conversationId: conversationId, body: body);
+      await ref
+          .read(chatRepositoryProvider)
+          .sendMessage(conversationId: conversationId, body: body);
       _messageController.clear();
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Message পাঠানো যায়নি: $error')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Message পাঠানো যায়নি: $error')));
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -161,7 +198,11 @@ class _MessageComposer extends StatelessWidget {
   final VoidCallback onSend;
   final String hintText;
 
-  const _MessageComposer({required this.controller, required this.sending, required this.onSend, required this.hintText});
+  const _MessageComposer(
+      {required this.controller,
+      required this.sending,
+      required this.onSend,
+      required this.hintText});
 
   @override
   Widget build(BuildContext context) {
@@ -177,14 +218,21 @@ class _MessageComposer extends StatelessWidget {
               maxLines: 4,
               minLines: 1,
               textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(hintText: hintText, prefixIcon: const Icon(Icons.chat_bubble_outline)),
+              decoration: InputDecoration(
+                  hintText: hintText,
+                  prefixIcon: const Icon(Icons.chat_bubble_outline)),
             ),
           ),
           const SizedBox(width: 8),
           IconButton.filled(
             tooltip: 'Message পাঠান',
             onPressed: sending ? null : onSend,
-            icon: sending ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send_rounded),
+            icon: sending
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.send_rounded),
           ),
         ],
       ),
@@ -222,12 +270,17 @@ class _MessageBubble extends StatelessWidget {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(message.body, style: TextStyle(color: isMine ? Colors.white : colorScheme.onSurface, height: 1.4)),
+              child: Text(message.body,
+                  style: TextStyle(
+                      color: isMine ? Colors.white : colorScheme.onSurface,
+                      height: 1.4)),
             ),
             const SizedBox(height: 4),
             Text(
               _timeLabel(message.createdAt),
-              style: TextStyle(color: isMine ? Colors.white70 : colorScheme.outline, fontSize: 10),
+              style: TextStyle(
+                  color: isMine ? Colors.white70 : colorScheme.outline,
+                  fontSize: 10),
             ),
           ],
         ),
@@ -254,11 +307,16 @@ class _ChatEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.forum_outlined, size: 58, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.forum_outlined,
+                size: 58, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 14),
-            const Text('Conversation শুরু করুন', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text('Conversation শুরু করুন',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            Text('Requirement, quantity, delivery বা packaging সম্পর্কে seller-কে লিখুন।', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
+            Text(
+                'Requirement, quantity, delivery বা packaging সম্পর্কে seller-কে লিখুন।',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade700, height: 1.4)),
           ],
         ),
       ),
@@ -282,10 +340,15 @@ class _ChatStatePanel extends StatelessWidget {
           children: [
             const Icon(Icons.chat_bubble_outline, size: 54),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('আবার চেষ্টা করুন')),
+              OutlinedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('আবার চেষ্টা করুন')),
             ],
           ],
         ),
@@ -316,13 +379,19 @@ class ChatInboxScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final conversationsAsync = ref.watch(isVendor ? vendorChatConversationsProvider : buyerChatConversationsProvider);
+    final conversationsAsync = ref.watch(isVendor
+        ? vendorChatConversationsProvider
+        : buyerChatConversationsProvider);
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     return Scaffold(
       appBar: AppBar(title: Text(isVendor ? 'Buyer chats' : 'Seller chats')),
       body: conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _ChatStatePanel(message: 'Chat list load করা যায়নি: $error', onRetry: () => ref.invalidate(isVendor ? vendorChatConversationsProvider : buyerChatConversationsProvider)),
+        error: (error, stack) => _ChatStatePanel(
+            message: 'Chat list load করা যায়নি: $error',
+            onRetry: () => ref.invalidate(isVendor
+                ? vendorChatConversationsProvider
+                : buyerChatConversationsProvider)),
         data: (conversations) {
           if (conversations.isEmpty) {
             return const _ChatStatePanel(message: 'এখনও কোনো chat নেই।');
@@ -338,12 +407,32 @@ class ChatInboxScreen extends ConsumerWidget {
                 margin: EdgeInsets.zero,
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: conversation.productImageUrl?.trim().isNotEmpty == true ? NetworkImage(conversation.productImageUrl!) : null,
-                    child: conversation.productImageUrl?.trim().isNotEmpty == true ? null : Icon(isVendor ? Icons.storefront_outlined : Icons.person_outline),
+                    backgroundImage:
+                        conversation.productImageUrl?.trim().isNotEmpty == true
+                            ? NetworkImage(conversation.productImageUrl!)
+                            : null,
+                    child:
+                        conversation.productImageUrl?.trim().isNotEmpty == true
+                            ? null
+                            : Icon(isVendor
+                                ? Icons.storefront_outlined
+                                : Icons.person_outline),
                   ),
-                  title: Text(conversation.productName?.trim().isNotEmpty == true ? conversation.productName! : 'Product #${conversation.productId.substring(0, 6)}', style: TextStyle(fontWeight: unread ? FontWeight.w900 : FontWeight.w700)),
-                  subtitle: Text(conversation.lastMessagePreview ?? 'Conversation শুরু হয়নি', maxLines: 2, overflow: TextOverflow.ellipsis),
-                  trailing: unread ? const CircleAvatar(radius: 5) : const Icon(Icons.chevron_right),
+                  title: Text(
+                      conversation.productName?.trim().isNotEmpty == true
+                          ? conversation.productName!
+                          : 'Product #${conversation.productId.substring(0, 6)}',
+                      style: TextStyle(
+                          fontWeight:
+                              unread ? FontWeight.w900 : FontWeight.w700)),
+                  subtitle: Text(
+                      conversation.lastMessagePreview ??
+                          'Conversation শুরু হয়নি',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  trailing: unread
+                      ? const CircleAvatar(radius: 5)
+                      : const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(

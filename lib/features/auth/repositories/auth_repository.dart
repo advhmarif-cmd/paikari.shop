@@ -14,11 +14,11 @@ class AuthRepository {
 
   sb.User? get currentUser => _auth.currentUser;
 
-  Stream<sb.User?> get authStateChanges => _auth.onAuthStateChange
-      .map((state) => state.session?.user);
+  Stream<sb.User?> get authStateChanges =>
+      _auth.onAuthStateChange.map((state) => state.session?.user);
 
-  Future<sb.AuthResponse> sendPhoneOtp({required String phoneNumber}) async {
-    return _auth.signInWithOtp(phone: phoneNumber);
+  Future<void> sendPhoneOtp({required String phoneNumber}) async {
+    await _auth.signInWithOtp(phone: phoneNumber);
   }
 
   Future<sb.AuthResponse> verifyPhoneOtp({
@@ -49,17 +49,18 @@ class AuthRepository {
     );
   }
 
+  Future<bool> signInWithOAuth(sb.OAuthProvider provider) {
+    return _auth.signInWithOAuth(provider, redirectTo: _authRedirectUrl);
+  }
+
   Future<void> signOut() => _auth.signOut();
 
   Future<UserModel> ensureUserProfileExists(
     sb.User user, {
     UserRole defaultRole = UserRole.consumer,
   }) async {
-    final existing = await _supabase
-        .from('users')
-        .select()
-        .eq('uid', user.id)
-        .maybeSingle();
+    final existing =
+        await _supabase.from('users').select().eq('uid', user.id).maybeSingle();
 
     if (existing != null) {
       return UserModel.fromJson(existing);

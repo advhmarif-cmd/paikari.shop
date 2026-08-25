@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:paikari_shop/features/inquiries/models/product_inquiry.dart';
 
 class InquiryRepository {
-  InquiryRepository({SupabaseClient? client}) : _supabase = client ?? Supabase.instance.client;
+  InquiryRepository({SupabaseClient? client})
+      : _supabase = client ?? Supabase.instance.client;
 
   final SupabaseClient _supabase;
 
@@ -38,16 +39,22 @@ class InquiryRepository {
         .eq('vendor_id', user.id)
         .order('created_at', ascending: false)
         .map((rows) => rows
-            .map((row) => ProductInquiry.fromJson(Map<String, dynamic>.from(row)))
+            .map((row) =>
+                ProductInquiry.fromJson(Map<String, dynamic>.from(row)))
             .toList());
   }
 
-  Future<void> respondToInquiry({required String inquiryId, required String response, required String status}) async {
-    if (!['responded', 'accepted', 'closed'].contains(status)) throw Exception('Invalid inquiry status');
+  Future<void> respondToInquiry(
+      {required String inquiryId,
+      required String response,
+      required String status}) async {
+    if (!['responded', 'accepted', 'closed'].contains(status)) {
+      throw Exception('Invalid inquiry status');
+    }
     await _supabase
         .from('product_inquiries')
-        .update({'vendor_response': response.trim(), 'status': status})
-        .eq('id', inquiryId);
+        .update({'vendor_response': response.trim(), 'status': status}).eq(
+            'id', inquiryId);
   }
 }
 

@@ -27,7 +27,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('লগইন'), findsWidgets);
+    expect(find.textContaining('মোবাইল নম্বর'), findsOneWidget);
     expect(find.byType(TextField), findsWidgets);
   });
 }

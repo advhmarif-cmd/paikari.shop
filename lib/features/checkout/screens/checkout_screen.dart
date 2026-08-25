@@ -56,7 +56,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionHeading(icon: Icons.location_on_outlined, title: l10n.shippingAddress),
+                    _SectionHeading(
+                        icon: Icons.location_on_outlined,
+                        title: l10n.shippingAddress),
                     const SizedBox(height: 12),
                     savedAddressesAsync.when(
                       loading: () => const Padding(
@@ -69,7 +71,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           : Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: DropdownButtonFormField<String>(
-                                value: _selectedSavedAddress?.id,
+                                initialValue: _selectedSavedAddress?.id,
                                 decoration: const InputDecoration(
                                   labelText: 'সংরক্ষিত ঠিকানা ব্যবহার করুন',
                                   prefixIcon: Icon(Icons.bookmark_border),
@@ -77,12 +79,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 items: savedAddresses
                                     .map((saved) => DropdownMenuItem<String>(
                                           value: saved.id,
-                                          child: Text(saved.label, overflow: TextOverflow.ellipsis),
+                                          child: Text(saved.label,
+                                              overflow: TextOverflow.ellipsis),
                                         ))
                                     .toList(),
                                 onChanged: (id) {
                                   if (id == null) return;
-                                  final selected = savedAddresses.firstWhere((saved) => saved.id == id);
+                                  final selected = savedAddresses
+                                      .firstWhere((saved) => saved.id == id);
                                   _applySavedAddress(selected);
                                 },
                               ),
@@ -100,41 +104,56 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       value: _saveAddressForNextTime,
-                      onChanged: (value) => setState(() => _saveAddressForNextTime = value),
-                      title: const Text('পরেরবারের জন্য ঠিকানা সংরক্ষণ করুন', style: TextStyle(fontWeight: FontWeight.w800)),
-                      subtitle: const Text('শুধু আপনার account-এ নিরাপদভাবে রাখা হবে'),
+                      onChanged: (value) =>
+                          setState(() => _saveAddressForNextTime = value),
+                      title: const Text('পরেরবারের জন্য ঠিকানা সংরক্ষণ করুন',
+                          style: TextStyle(fontWeight: FontWeight.w800)),
+                      subtitle: const Text(
+                          'শুধু আপনার account-এ নিরাপদভাবে রাখা হবে'),
                     ),
                     const SizedBox(height: 12),
-                    _SectionHeading(icon: Icons.local_shipping_outlined, title: 'ডেলিভারি এলাকা'),
+                    const _SectionHeading(
+                        icon: Icons.local_shipping_outlined,
+                        title: 'ডেলিভারি এলাকা'),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: _selectedDeliveryZone,
+                      initialValue: _selectedDeliveryZone,
                       decoration: const InputDecoration(
                         labelText: 'এলাকা নির্বাচন করুন',
                         prefixIcon: Icon(Icons.map_outlined),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'inside', child: Text('ঢাকার ভিতরে')),
-                        DropdownMenuItem(value: 'outside', child: Text('ঢাকার বাইরে')),
+                        DropdownMenuItem(
+                            value: 'inside', child: Text('ঢাকার ভিতরে')),
+                        DropdownMenuItem(
+                            value: 'outside', child: Text('ঢাকার বাইরে')),
                       ],
                       onChanged: (value) {
-                        if (value != null) setState(() => _selectedDeliveryZone = value);
+                        if (value != null) {
+                          setState(() => _selectedDeliveryZone = value);
+                        }
                       },
                     ),
                     const SizedBox(height: 24),
-                    _SectionHeading(icon: Icons.payments_outlined, title: l10n.paymentMethod),
+                    _SectionHeading(
+                        icon: Icons.payments_outlined,
+                        title: l10n.paymentMethod),
                     const SizedBox(height: 8),
                     _PaymentOptions(
                       value: _selectedPaymentMethod,
-                      onChanged: (value) => setState(() => _selectedPaymentMethod = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedPaymentMethod = value),
                       cashLabel: l10n.cashOnDelivery,
                     ),
-                    if (_selectedPaymentMethod == 'Bkash' || _selectedPaymentMethod == 'Bangla QR') ...[
+                    if (_selectedPaymentMethod == 'Bkash' ||
+                        _selectedPaymentMethod == 'Bangla QR') ...[
                       const SizedBox(height: 10),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.09), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.09),
+                            borderRadius: BorderRadius.circular(12)),
                         child: Text(
                           _selectedPaymentMethod == 'Bangla QR'
                               ? 'Bangla QR acquiring partner এখনো সংযুক্ত হয়নি। Order pending থাকবে; verified provider callback ছাড়া paid হবে না।'
@@ -150,19 +169,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton.icon(
-                        onPressed: orderState.isLoading ? null : () => _submitOrder(cartState),
+                        onPressed: orderState.isLoading
+                            ? null
+                            : () => _submitOrder(cartState),
                         icon: orderState.isLoading
-                            ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.lock_outline),
-                        label: Text(orderState.isLoading ? 'অর্ডার পাঠানো হচ্ছে...' : l10n.placeOrder, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-                        style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                        label: Text(
+                            orderState.isLoading
+                                ? 'অর্ডার পাঠানো হচ্ছে...'
+                                : l10n.placeOrder,
+                            style: const TextStyle(
+                                fontSize: 17, fontWeight: FontWeight.w900)),
+                        style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14))),
                       ),
                     ),
                     const SizedBox(height: 10),
                     Center(
                       child: Text(
                         'চূড়ান্ত মূল্য সার্ভার থেকে যাচাই হবে',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12),
                       ),
                     ),
                   ],
@@ -194,7 +226,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('B2B ও B2C পণ্য একসাথে checkout করা যাবে না। Cart থেকে একটি mode-এর পণ্য রাখুন।'),
+            content: Text(
+                'B2B ও B2C পণ্য একসাথে checkout করা যাবে না। Cart থেকে একটি mode-এর পণ্য রাখুন।'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -213,7 +246,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('B2B order-এর জন্য কমপক্ষে ${moqViolation.product.moq} ${moqViolation.product.unitLabel} প্রয়োজন।'),
+            content: Text(
+                'B2B order-এর জন্য কমপক্ষে ${moqViolation.product.moq} ${moqViolation.product.unitLabel} প্রয়োজন।'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -232,12 +266,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (_saveAddressForNextTime && _selectedSavedAddress == null) {
       try {
-        final existing = ref.read(savedAddressesProvider).valueOrNull ?? const <SavedAddress>[];
+        final existing = ref.read(savedAddressesProvider).valueOrNull ??
+            const <SavedAddress>[];
         await ref.read(savedAddressRepositoryProvider).save(
-          label: 'আমার ঠিকানা',
-          address: address,
-          isDefault: existing.isEmpty,
-        );
+              label: 'আমার ঠিকানা',
+              address: address,
+              isDefault: existing.isEmpty,
+            );
         ref.invalidate(savedAddressesProvider);
       } catch (_) {
         // Address persistence must never block the server-authoritative order.
@@ -259,7 +294,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text(error ?? 'অর্ডার সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।'),
+            content: Text(error?.toString() ??
+                'অর্ডার সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -324,14 +360,18 @@ class _AddressForm extends StatelessWidget {
         TextFormField(
           controller: districtController,
           textInputAction: TextInputAction.next,
-          decoration: InputDecoration(labelText: districtLabel, prefixIcon: const Icon(Icons.location_city_outlined)),
+          decoration: InputDecoration(
+              labelText: districtLabel,
+              prefixIcon: const Icon(Icons.location_city_outlined)),
           validator: _required,
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: thanaController,
           textInputAction: TextInputAction.next,
-          decoration: InputDecoration(labelText: thanaLabel, prefixIcon: const Icon(Icons.account_balance_outlined)),
+          decoration: InputDecoration(
+              labelText: thanaLabel,
+              prefixIcon: const Icon(Icons.account_balance_outlined)),
           validator: _required,
         ),
         const SizedBox(height: 12),
@@ -339,22 +379,34 @@ class _AddressForm extends StatelessWidget {
           controller: streetController,
           maxLines: 2,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(labelText: 'বিস্তারিত ঠিকানা', hintText: 'গ্রাম, বাড়ি/রোড, landmark', prefixIcon: Icon(Icons.home_outlined)),
-          validator: (value) => value == null || value.trim().length < 6 ? 'বিস্তারিত ঠিকানা দিন' : null,
+          decoration: const InputDecoration(
+              labelText: 'বিস্তারিত ঠিকানা',
+              hintText: 'গ্রাম, বাড়ি/রোড, landmark',
+              prefixIcon: Icon(Icons.home_outlined)),
+          validator: (value) => value == null || value.trim().length < 6
+              ? 'বিস্তারিত ঠিকানা দিন'
+              : null,
         ),
         const SizedBox(height: 12),
         TextFormField(
           controller: phoneController,
           keyboardType: TextInputType.phone,
           textInputAction: TextInputAction.done,
-          decoration: InputDecoration(labelText: phoneLabel, prefixIcon: const Icon(Icons.phone_outlined), prefixText: '+৮৮ '),
-          validator: (value) => value == null || value.replaceAll(RegExp(r'\D'), '').length < 11 ? 'সঠিক মোবাইল নম্বর দিন' : null,
+          decoration: InputDecoration(
+              labelText: phoneLabel,
+              prefixIcon: const Icon(Icons.phone_outlined),
+              prefixText: '+৮৮ '),
+          validator: (value) =>
+              value == null || value.replaceAll(RegExp(r'\D'), '').length < 11
+                  ? 'সঠিক মোবাইল নম্বর দিন'
+                  : null,
         ),
       ],
     );
   }
 
-  String? _required(String? value) => value == null || value.trim().isEmpty ? 'প্রয়োজনীয়' : null;
+  String? _required(String? value) =>
+      value == null || value.trim().isEmpty ? 'প্রয়োজনীয়' : null;
 }
 
 class _PaymentOptions extends StatelessWidget {
@@ -362,7 +414,8 @@ class _PaymentOptions extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final String cashLabel;
 
-  const _PaymentOptions({required this.value, required this.onChanged, required this.cashLabel});
+  const _PaymentOptions(
+      {required this.value, required this.onChanged, required this.cashLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -374,26 +427,31 @@ class _PaymentOptions extends StatelessWidget {
       child: Card(
         margin: EdgeInsets.zero,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: Colors.grey.shade200)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: Colors.grey.shade200)),
         child: Column(
           children: [
             RadioListTile<String>(
               value: 'Cash on Delivery',
-              title: Text(cashLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+              title: Text(cashLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
               subtitle: const Text('পণ্য হাতে পেয়ে টাকা দিন'),
               secondary: const Icon(Icons.local_atm_outlined),
             ),
             const Divider(height: 1),
             const RadioListTile<String>(
               value: 'Bkash',
-              title: Text('Bkash (বিকাশ)', style: TextStyle(fontWeight: FontWeight.w800)),
+              title: Text('Bkash (বিকাশ)',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
               subtitle: Text('Payment confirmation পরে নেওয়া হবে'),
               secondary: Icon(Icons.account_balance_wallet_outlined),
             ),
             const Divider(height: 1),
             const RadioListTile<String>(
               value: 'Bangla QR',
-              title: Text('Bangla QR', style: TextStyle(fontWeight: FontWeight.w800)),
+              title: Text('Bangla QR',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
               subtitle: Text('Acquirer setup-এর পরে verified payment হবে'),
               secondary: Icon(Icons.qr_code_2_outlined),
             ),
@@ -416,7 +474,8 @@ class _OrderSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: PaikariTheme.primaryColor.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PaikariTheme.primaryColor.withValues(alpha: 0.16)),
+        border: Border.all(
+            color: PaikariTheme.primaryColor.withValues(alpha: 0.16)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -424,12 +483,18 @@ class _OrderSummary extends StatelessWidget {
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('কার্ট subtotal', style: TextStyle(fontWeight: FontWeight.w800)),
+              Text('কার্ট subtotal',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
               SizedBox(height: 4),
-              Text('Delivery charge checkout-এ যোগ হবে', style: TextStyle(fontSize: 12)),
+              Text('Delivery charge checkout-এ যোগ হবে',
+                  style: TextStyle(fontSize: 12)),
             ],
           ),
-          Text('৳${totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: PaikariTheme.primaryColor)),
+          Text('৳${totalAmount.toStringAsFixed(0)}',
+              style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: PaikariTheme.primaryColor)),
         ],
       ),
     );
@@ -448,7 +513,8 @@ class _SectionHeading extends StatelessWidget {
       children: [
         Icon(icon, color: PaikariTheme.primaryColor),
         const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        Text(title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
       ],
     );
   }
@@ -467,13 +533,20 @@ class _EmptyCheckout extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.shopping_bag_outlined, size: 68, color: PaikariTheme.primaryColor),
+            const Icon(Icons.shopping_bag_outlined,
+                size: 68, color: PaikariTheme.primaryColor),
             const SizedBox(height: 18),
-            const Text('আপনার কার্ট খালি', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const Text('আপনার কার্ট খালি',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            Text('Checkout করার আগে একটি product কার্টে যোগ করুন।', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+            Text('Checkout করার আগে একটি product কার্টে যোগ করুন।',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 20),
-            OutlinedButton.icon(onPressed: onBack, icon: const Icon(Icons.arrow_back), label: const Text('কার্টে ফিরে যান')),
+            OutlinedButton.icon(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('কার্টে ফিরে যান')),
           ],
         ),
       ),

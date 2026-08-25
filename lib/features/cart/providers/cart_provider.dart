@@ -28,46 +28,35 @@ class CartNotifier extends StateNotifier<CartState> {
 
   void addItem(Product product, {bool businessMode = false, int quantity = 1}) {
     final safeQuantity = quantity < 1 ? 1 : quantity;
-    if (state.items.containsKey(product.id)) {
-      state = state.copyWith(
-        items: {
-          ...state.items,
-          product.id: state.items[product.id]!.copyWith(
-            quantity: state.items[product.id]!.quantity + safeQuantity,
-            businessMode: state.items[product.id]!.businessMode || businessMode,
-          ),
-        },
-      );
-    } else {
-      state = state.copyWith(
-        items: {
-          ...state.items,
-          product.id: CartItem(product: product, quantity: safeQuantity, businessMode: businessMode),
-        },
-      );
-    }
-  }
-
-  void removeOneItem(String productId) {
-    if (!state.items.containsKey(productId)) return;
-
-    if (state.items[productId]!.quantity > 1) {
-      state = state.copyWith(
-        items: {
-          ...state.items,
-          productId: state.items[productId]!.copyWith(
-            quantity: state.items[productId]!.quantity - 1,
-          ),
-        },
-      );
-    } else {
-      removeItem(productId);
-    }
-  }
-
-  void removeItem(String productId) {
+    final itemKey = _cartKey(product.id, businessMode);
+    final existing = state.items[itemKey];
     final updatedItems = Map<String, CartItem>.from(state.items);
-    updatedItems.remove(productId);
+    updatedItems[itemKey] = existing == null
+        ? CartItem(
+            product: product,
+            quantity: safeQuantity,
+            businessMode: businessMode)
+        : existing.copyWith(quantity: existing.quantity + safeQuantity);
+    state = state.copyWith(items: updatedItems);
+  }
+
+  void removeOneItem(String productId, {bool businessMode = false}) {
+    final itemKey = _cartKey(productId, businessMode);
+    final item = state.items[itemKey];
+    if (item == null) return;
+
+    if (item.quantity > 1) {
+      final updatedItems = Map<String, CartItem>.from(state.items);
+      updatedItems[itemKey] = item.copyWith(quantity: item.quantity - 1);
+      state = state.copyWith(items: updatedItems);
+    } else {
+      removeItem(productId, businessMode: businessMode);
+    }
+  }
+
+  void removeItem(String productId, {bool businessMode = false}) {
+    final updatedItems = Map<String, CartItem>.from(state.items);
+    updatedItems.remove(_cartKey(productId, businessMode));
     state = state.copyWith(items: updatedItems);
   }
 
@@ -75,6 +64,9 @@ class CartNotifier extends StateNotifier<CartState> {
     state = CartState();
   }
 }
+
+String _cartKey(String productId, bool businessMode) =>
+    '$productId:${businessMode ? 'b2b' : 'b2c'}';
 
 final cartProvider =
     StateNotifierProvider<CartNotifier, CartState>((ref) => CartNotifier());

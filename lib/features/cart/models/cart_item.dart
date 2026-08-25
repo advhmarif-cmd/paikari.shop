@@ -12,18 +12,19 @@ class CartItem {
   });
 
   double get price {
-    // Determine price based on wholesale tiers (assuming tiers are sorted by minQuantity)
-    double selectedPrice = product.retailPrice;
-    if (!businessMode) return selectedPrice;
-    for (var tier in product.wholesaleTiers) {
-      if (quantity >= tier.minQuantity) {
-        // Since we want the best price for the user, we take the minimum price met
-        if (tier.price < selectedPrice) {
-          selectedPrice = tier.price;
-        }
+    if (!businessMode) return product.retailPrice;
+
+    // Match the server RPC: choose the tier with the highest qualifying MOQ,
+    // not the numerically lowest price across all tiers.
+    WholesaleTier? selectedTier;
+    for (final tier in product.wholesaleTiers) {
+      if (quantity >= tier.minQuantity &&
+          (selectedTier == null ||
+              tier.minQuantity > selectedTier.minQuantity)) {
+        selectedTier = tier;
       }
     }
-    return selectedPrice;
+    return selectedTier?.price ?? product.retailPrice;
   }
 
   double get total => price * quantity;
