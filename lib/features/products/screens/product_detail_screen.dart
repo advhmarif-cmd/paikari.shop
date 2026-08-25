@@ -175,29 +175,29 @@ class ProductDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => showInquirySheet(context, ref, product),
-                      icon: const Icon(Icons.message_outlined),
-                      label: const Text('Inquiry'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => showInquirySheet(context, ref, product),
+                        icon: const Icon(Icons.message_outlined),
+                        label: const Text('Inquiry'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => showQuotationSheet(context, ref, product),
-                      icon: const Icon(Icons.request_quote_outlined),
-                      label: const Text('Quote'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => showQuotationSheet(context, ref, product),
+                        icon: const Icon(Icons.request_quote_outlined),
+                        label: const Text('Quote'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
                       ),
                     ),
-                  ),
                   ],
                 ),
               ],
