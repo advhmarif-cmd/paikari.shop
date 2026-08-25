@@ -35,33 +35,33 @@ class CartScreen extends ConsumerWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${items.length} টি পণ্য',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 3),
-                          Text(
-                            hasB2bItems && hasB2cItems
-                                ? 'B2B + B2C cart · আলাদা checkout প্রয়োজন'
-                                : hasB2bItems
-                                    ? 'B2B cart · MOQ প্রযোজ্য'
-                                    : 'B2C cart',
-                            style: const TextStyle(
-                                color: PaikariTheme.primaryColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800),
-                          ),
-                        ],
+                      Text(
+                        '${items.length} টি পণ্য',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 3),
+                      Text(
+                        hasB2bItems && hasB2cItems
+                            ? 'B2B + B2C cart · আলাদা checkout প্রয়োজন'
+                            : hasB2bItems
+                            ? 'B2B cart · MOQ প্রযোজ্য'
+                            : 'B2C cart',
+                        style: const TextStyle(
+                          color: PaikariTheme.primaryColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       Text(
                         'Checkout-এ delivery charge যোগ হবে',
                         style: TextStyle(
-                            color: Colors.grey.shade600, fontSize: 11),
+                          color: Colors.grey.shade600,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -77,16 +77,22 @@ class CartScreen extends ConsumerWidget {
                         item: item,
                         onDecrease: () => ref
                             .read(cartProvider.notifier)
-                            .removeOneItem(item.product.id,
-                                businessMode: item.businessMode),
+                            .removeOneItem(
+                              item.product.id,
+                              businessMode: item.businessMode,
+                            ),
                         onIncrease: () => ref
                             .read(cartProvider.notifier)
-                            .addItem(item.product,
-                                businessMode: item.businessMode),
+                            .addItem(
+                              item.product,
+                              businessMode: item.businessMode,
+                            ),
                         onRemove: () => ref
                             .read(cartProvider.notifier)
-                            .removeItem(item.product.id,
-                                businessMode: item.businessMode),
+                            .removeItem(
+                              item.product.id,
+                              businessMode: item.businessMode,
+                            ),
                       );
                     },
                   ),
@@ -94,7 +100,19 @@ class CartScreen extends ConsumerWidget {
                 _CartSummary(
                   totalAmount: cartState.totalAmount,
                   checkoutLabel: l10n.checkout,
-                  onCheckout: () => Navigator.pushNamed(context, '/checkout'),
+                  onCheckout: () {
+                    if (hasB2bItems && hasB2cItems) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'একসঙ্গে B2B ও B2C checkout করা যাবে না। একটি mode-এর item রেখে আবার চেষ্টা করুন।',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.pushNamed(context, '/checkout');
+                  },
                 ),
               ],
             ),
@@ -109,11 +127,13 @@ class CartScreen extends ConsumerWidget {
         content: const Text('কার্টের সব পণ্য সরিয়ে দেওয়া হবে।'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('না')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('না'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('হ্যাঁ, খালি করুন')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('হ্যাঁ, খালি করুন'),
+          ),
         ],
       ),
     );
@@ -163,19 +183,24 @@ class _CartItemTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, height: 1.25),
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
                   ),
                   if (item.product.vendorName != null &&
                       item.product.vendorName!.trim().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
-                      child: Text(item.product.vendorName!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700)),
+                      child: Text(
+                        item.product.vendorName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 5),
                   Wrap(
@@ -185,34 +210,41 @@ class _CartItemTile extends StatelessWidget {
                       Text(
                         '৳${item.price.toStringAsFixed(0)} / ${item.product.unitLabel}',
                         style: TextStyle(
-                            color: Colors.grey.shade600, fontSize: 12),
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
                       ),
                       if (item.businessMode)
                         _CartBadge(label: 'B2B · MOQ ${item.product.moq}'),
                       if (item.product.stockQuantity != null)
                         _CartBadge(
-                            label: 'Stock ${item.product.availableQuantity}'),
+                          label: 'Stock ${item.product.availableQuantity}',
+                        ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       _QuantityButton(
-                          icon: Icons.remove, onPressed: onDecrease),
+                        icon: Icons.remove,
+                        onPressed: onDecrease,
+                      ),
                       SizedBox(
                         width: 34,
-                        child: Text('${item.quantity}',
-                            textAlign: TextAlign.center,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w900)),
+                        child: Text(
+                          '${item.quantity}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
                       ),
                       _QuantityButton(icon: Icons.add, onPressed: onIncrease),
                       const Spacer(),
                       IconButton(
-                        visualDensity: VisualDensity.compact,
                         tooltip: 'পণ্য সরান',
-                        icon: Icon(Icons.delete_outline,
-                            color: Colors.grey.shade600),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.grey.shade600,
+                        ),
                         onPressed: onRemove,
                       ),
                     ],
@@ -236,15 +268,19 @@ class _CartBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-          color: PaikariTheme.primaryColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(999)),
+        color: PaikariTheme.primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        child: Text(label,
-            style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: PaikariTheme.primaryColor)),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: PaikariTheme.primaryColor,
+          ),
+        ),
       ),
     );
   }
@@ -258,15 +294,12 @@ class _QuantityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 36,
-      height: 36,
-      child: IconButton.filledTonal(
-        padding: EdgeInsets.zero,
-        iconSize: 18,
-        onPressed: onPressed,
-        icon: Icon(icon),
-      ),
+    return IconButton.filledTonal(
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+      padding: EdgeInsets.zero,
+      iconSize: 18,
+      onPressed: onPressed,
+      icon: Icon(icon),
     );
   }
 }
@@ -276,10 +309,11 @@ class _CartSummary extends StatelessWidget {
   final String checkoutLabel;
   final VoidCallback onCheckout;
 
-  const _CartSummary(
-      {required this.totalAmount,
-      required this.checkoutLabel,
-      required this.onCheckout});
+  const _CartSummary({
+    required this.totalAmount,
+    required this.checkoutLabel,
+    required this.onCheckout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -293,30 +327,37 @@ class _CartSummary extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, -6))
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, -6),
+            ),
           ],
         ),
         child: Column(
           children: [
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('দাম ও stock checkout-এ server থেকে আবার যাচাই হবে',
-                  style: TextStyle(fontSize: 11, color: Colors.grey)),
+              child: Text(
+                'দাম ও stock checkout-এ server থেকে আবার যাচাই হবে',
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Subtotal',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                Text('৳${totalAmount.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w900,
-                        color: PaikariTheme.primaryColor)),
+                const Text(
+                  'Subtotal',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  '৳${totalAmount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: PaikariTheme.primaryColor,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -326,12 +367,18 @@ class _CartSummary extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onCheckout,
                 icon: const Icon(Icons.arrow_forward_rounded),
-                label: Text(checkoutLabel,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w900)),
+                label: Text(
+                  checkoutLabel,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14))),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
             ),
           ],
@@ -358,24 +405,32 @@ class _EmptyCart extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                  color: PaikariTheme.primaryColor.withValues(alpha: 0.08),
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.shopping_cart_outlined,
-                  size: 64, color: PaikariTheme.primaryColor),
+                color: PaikariTheme.primaryColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.shopping_cart_outlined,
+                size: 64,
+                color: PaikariTheme.primaryColor,
+              ),
             ),
             const SizedBox(height: 20),
-            Text(l10n.emptyCart,
-                style:
-                    const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+            Text(
+              l10n.emptyCart,
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
-            Text('পছন্দের পণ্য যোগ করলে এখানে দেখা যাবে।',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              'পছন্দের পণ্য যোগ করলে এখানে দেখা যাবে।',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
-                onPressed: onBrowse,
-                icon: const Icon(Icons.storefront_outlined),
-                label: const Text('পণ্য দেখুন')),
+              onPressed: onBrowse,
+              icon: const Icon(Icons.storefront_outlined),
+              label: const Text('পণ্য দেখুন'),
+            ),
           ],
         ),
       ),

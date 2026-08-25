@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -33,6 +34,15 @@ import 'package:paikari_shop/core/widgets/shimmer_loading.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: PaikariTheme.primaryColor,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: PaikariTheme.backgroundWhite,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: PaikariTheme.softBorder,
+    ),
+  );
 
   await Supabase.initialize(
     url: SupabaseConfig.url,
@@ -43,9 +53,7 @@ Future<void> main() async {
   );
 
   // Firebase remains only for legacy storage/trade-license uploads; auth and orders use Supabase.
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const ProviderScope(child: PaikariApp()));
 }
 
@@ -64,10 +72,7 @@ class PaikariApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('bn'),
-      ],
+      supportedLocales: const [Locale('en'), Locale('bn')],
       locale: const Locale('bn'),
       home: const AuthWrapper(),
       onGenerateRoute: (settings) {
@@ -75,7 +80,8 @@ class PaikariApp extends StatelessWidget {
         if (name.startsWith('/p/')) {
           final slug = Uri.decodeComponent(name.substring(3));
           return MaterialPageRoute(
-              builder: (_) => ProductSlugScreen(slug: slug));
+            builder: (_) => ProductSlugScreen(slug: slug),
+          );
         }
         return null;
       },
@@ -133,12 +139,10 @@ class AuthWrapper extends ConsumerWidget {
         }
         return const LoginScreen();
       },
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stack) => Scaffold(
-        body: Center(child: Text('Auth Error: $error')),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          Scaffold(body: Center(child: Text('Auth Error: $error'))),
     );
   }
 }
@@ -159,17 +163,22 @@ class _ProfileBootstrapError extends StatelessWidget {
             children: [
               const Icon(Icons.person_off_outlined, size: 52),
               const SizedBox(height: 12),
-              const Text('Profile load করা যায়নি',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const Text(
+                'Profile load করা যায়নি',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 8),
-              Text('ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade700)),
+              Text(
+                'ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
               const SizedBox(height: 16),
               FilledButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('আবার চেষ্টা করুন')),
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('আবার চেষ্টা করুন'),
+              ),
             ],
           ),
         ),
@@ -205,14 +214,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final productsAsync = ref.watch(productListProvider(_businessMode));
     final cartCount = ref.watch(cartProvider).itemCount;
-    final unreadNotifications = ref
+    final unreadNotifications =
+        ref
             .watch(myNotificationsProvider)
             .valueOrNull
             ?.where((item) => item.readAt == null)
             .length ??
         0;
     final userId = ref.watch(authRepositoryProvider).currentUser?.id ?? '';
-    final unreadChats = ref
+    final unreadChats =
+        ref
             .watch(buyerChatConversationsProvider)
             .valueOrNull
             ?.where((chat) => chat.isUnreadFor(userId))
@@ -249,16 +260,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10)),
-                    constraints:
-                        const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text('$unreadNotifications',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center),
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$unreadNotifications',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
             ],
@@ -277,16 +294,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10)),
-                    constraints:
-                        const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text('$unreadChats',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center),
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$unreadChats',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
             ],
@@ -305,16 +328,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10)),
-                    constraints:
-                        const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text('$cartCount',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center),
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$cartCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
             ],
@@ -330,7 +359,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         data: (products) => _buildCatalog(context, products),
         loading: () => _buildLoadingGrid(context),
         error: (err, stack) => _CatalogError(
-            onRetry: () => ref.invalidate(productListProvider(_businessMode))),
+          onRetry: () => ref.invalidate(productListProvider(_businessMode)),
+        ),
       ),
     );
   }
@@ -344,7 +374,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }.toList();
     final normalizedQuery = _query.trim().toLowerCase();
     final filteredProducts = products.where((product) {
-      final matchesQuery = normalizedQuery.isEmpty ||
+      final matchesQuery =
+          normalizedQuery.isEmpty ||
           product.name.toLowerCase().contains(normalizedQuery) ||
           product.description.toLowerCase().contains(normalizedQuery) ||
           product.category.toLowerCase().contains(normalizedQuery) ||
@@ -405,8 +436,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Row(
             children: [
-              const Text('কেনাকাটার ধরন',
-                  style: TextStyle(fontWeight: FontWeight.w900)),
+              const Text(
+                'কেনাকাটার ধরন',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
               const Spacer(),
               ChoiceChip(
                 label: const Text('B2C'),
@@ -552,8 +585,11 @@ class _SortChip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const ListTile(
-                    title: Text('পণ্য সাজান',
-                        style: TextStyle(fontWeight: FontWeight.w900))),
+                  title: Text(
+                    'পণ্য সাজান',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
                 RadioGroup<String>(
                   groupValue: value,
                   onChanged: (next) {
@@ -609,16 +645,22 @@ class _EmptyCatalog extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.storefront_outlined,
-                size: 68,
-                color: PaikariTheme.primaryColor.withValues(alpha: 0.7)),
+            Icon(
+              Icons.storefront_outlined,
+              size: 68,
+              color: PaikariTheme.primaryColor.withValues(alpha: 0.7),
+            ),
             const SizedBox(height: 18),
-            const Text('এখনও কোনো পণ্য নেই',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const Text(
+              'এখনও কোনো পণ্য নেই',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
-            Text('নতুন পণ্য যোগ হলে এখানে দেখা যাবে।',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              'নতুন পণ্য যোগ হলে এখানে দেখা যাবে।',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
           ],
         ),
       ),
@@ -638,12 +680,18 @@ class _EmptySearch extends StatelessWidget {
         Icon(Icons.search_off, size: 58, color: Colors.grey.shade400),
         const SizedBox(height: 16),
         const Center(
-            child: Text('এই filter-এ কোনো পণ্য নেই',
-                style: TextStyle(fontWeight: FontWeight.w800))),
+          child: Text(
+            'এই filter-এ কোনো পণ্য নেই',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
         const SizedBox(height: 8),
         const Center(
-            child: Text('অন্য keyword বা category দিয়ে চেষ্টা করুন।',
-                style: TextStyle(color: Colors.grey))),
+          child: Text(
+            'অন্য keyword বা category দিয়ে চেষ্টা করুন।',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
       ],
     );
   }
@@ -662,20 +710,28 @@ class _CatalogError extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off_outlined,
-                size: 64, color: Colors.grey.shade500),
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 64,
+              color: Colors.grey.shade500,
+            ),
             const SizedBox(height: 16),
-            const Text('পণ্য লোড করা যায়নি',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+            const Text(
+              'পণ্য লোড করা যায়নি',
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
-            Text('ইন্টারনেট connection যাচাই করে আবার চেষ্টা করুন।',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              'ইন্টারনেট connection যাচাই করে আবার চেষ্টা করুন।',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 18),
             OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('আবার চেষ্টা করুন')),
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('আবার চেষ্টা করুন'),
+            ),
           ],
         ),
       ),

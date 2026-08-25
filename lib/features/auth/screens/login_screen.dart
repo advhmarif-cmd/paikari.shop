@@ -47,17 +47,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final phoneNumber = _normalizePhoneNumber(rawPhone);
     final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 12) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('সঠিক মোবাইল নম্বর দিন')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('সঠিক মোবাইল নম্বর দিন')));
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).sendPhoneOtp(
-            phoneNumber: phoneNumber,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .sendPhoneOtp(phoneNumber: phoneNumber);
       if (mounted) {
         setState(() {
           _phoneNumber = phoneNumber;
@@ -66,9 +66,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('OTP পাঠানো যায়নি: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('OTP পাঠানো যায়নি: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -79,7 +79,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (_otpController.text.trim().isEmpty || _phoneNumber == null) return;
     setState(() => _isLoading = true);
     try {
-      final response = await ref.read(authRepositoryProvider).verifyPhoneOtp(
+      final response = await ref
+          .read(authRepositoryProvider)
+          .verifyPhoneOtp(
             phoneNumber: _phoneNumber!,
             token: _otpController.text.trim(),
           );
@@ -89,9 +91,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ভুল OTP: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('ভুল OTP: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,15 +107,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authRepositoryProvider)
           .signInWithOAuth(provider);
       if (!started && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('লগইন শুরু করা যায়নি')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('লগইন শুরু করা যায়নি')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('লগইন ব্যর্থ হয়েছে: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('লগইন ব্যর্থ হয়েছে: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -134,8 +136,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -153,9 +156,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   l10n.appTitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 30),
                 Card(
@@ -171,6 +174,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           TextField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [
+                              AutofillHints.telephoneNumber,
+                            ],
+                            onSubmitted: (_) => _sendOtp(),
                             decoration: InputDecoration(
                               labelText: 'মোবাইল নম্বর (Phone Number)',
                               prefixText: '+৮৮ ',
@@ -191,14 +199,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             child: _isLoading
                                 ? const CircularProgressIndicator(
-                                    color: Colors.white)
-                                : const Text('OTP পাঠান (Send OTP)',
-                                    style: TextStyle(fontSize: 16)),
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'OTP পাঠান (Send OTP)',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
                           ),
                         ] else ...[
                           TextField(
                             controller: _otpController,
                             keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            maxLength: 6,
+                            onSubmitted: (_) => _verifyOtp(),
                             decoration: InputDecoration(
                               labelText: '৬ সংখ্যার কোড (OTP)',
                               prefixIcon: const Icon(Icons.lock_clock),
@@ -218,16 +233,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             child: _isLoading
                                 ? const CircularProgressIndicator(
-                                    color: Colors.white)
-                                : const Text('যাচাই করুন (Verify)',
-                                    style: TextStyle(fontSize: 18)),
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'যাচাই করুন (Verify)',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
                           ),
                           TextButton(
-                            onPressed: () =>
-                                setState(() {
-                                  _otpSent = false;
-                                  _phoneNumber = null;
-                                }),
+                            onPressed: () => setState(() {
+                              _otpSent = false;
+                              _phoneNumber = null;
+                            }),
                             child: const Text('নম্বর পরিবর্তন করুন'),
                           ),
                         ],
@@ -243,34 +260,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _SocialButton(
-                              label: 'Google',
-                              color: Colors.red.shade600,
-                              icon: Icons.g_mobiledata,
-                              onPressed: () => _handleSocialLogin(sb.OAuthProvider.google),
-                            ),
-                            _SocialButton(
-                              label: 'Facebook',
-                              color: Colors.blue.shade800,
-                              icon: Icons.facebook,
-                              onPressed: () => _handleSocialLogin(sb.OAuthProvider.facebook),
-                            ),
-                          ],
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final buttonWidth = constraints.maxWidth < 360
+                                ? constraints.maxWidth
+                                : (constraints.maxWidth - 10) / 2;
+                            return Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: _SocialButton(
+                                    label: 'Google',
+                                    color: Colors.red.shade600,
+                                    icon: Icons.g_mobiledata,
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => _handleSocialLogin(
+                                            sb.OAuthProvider.google,
+                                          ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: _SocialButton(
+                                    label: 'Facebook',
+                                    color: Colors.blue.shade800,
+                                    icon: Icons.facebook,
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => _handleSocialLogin(
+                                            sb.OAuthProvider.facebook,
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
                 ),
-                const Spacer(),
-                const Text(
-                  'অ্যাকাউন্ট নেই? নিবন্ধন করুন',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                const SizedBox(height: 22),
+                TextButton.icon(
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.pushNamed(context, '/signup'),
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: const Text('অ্যাকাউন্ট নেই? নিবন্ধন করুন'),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -284,7 +326,7 @@ class _SocialButton extends StatelessWidget {
   final String label;
   final Color color;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _SocialButton({
     required this.label,
@@ -295,10 +337,9 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: color.withValues(alpha: 0.3)),
@@ -311,18 +352,25 @@ class _SocialButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color.withValues(alpha: 0.8),
-              ),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
