@@ -44,6 +44,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final orderState = ref.watch(orderProvider);
     final savedAddressesAsync = ref.watch(savedAddressesProvider);
     final l10n = AppLocalizations.of(context)!;
+    final hasB2bItems = cartState.items.values.any((item) => item.businessMode);
+    final hasB2cItems = cartState.items.values.any(
+      (item) => !item.businessMode,
+    );
+    final buyerMode = hasB2bItems && hasB2cItems
+        ? 'mixed'
+        : hasB2bItems
+        ? 'b2b'
+        : 'b2c';
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.checkout)),
@@ -181,7 +190,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ],
                     const SizedBox(height: 24),
-                    _OrderSummary(totalAmount: cartState.totalAmount),
+                    _OrderSummary(
+                      totalAmount: cartState.totalAmount,
+                      buyerMode: buyerMode,
+                    ),
                     const SizedBox(height: 22),
                     SizedBox(
                       width: double.infinity,
@@ -515,8 +527,9 @@ class _PaymentOptions extends StatelessWidget {
 
 class _OrderSummary extends StatelessWidget {
   final double totalAmount;
+  final String buyerMode;
 
-  const _OrderSummary({required this.totalAmount});
+  const _OrderSummary({required this.totalAmount, required this.buyerMode});
 
   @override
   Widget build(BuildContext context) {
@@ -529,30 +542,39 @@ class _OrderSummary extends StatelessWidget {
           color: PaikariTheme.primaryColor.withValues(alpha: 0.16),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Column(
+          Text(
+            buyerMode == 'b2b'
+                ? 'B2B wholesale subtotal'
+                : buyerMode == 'b2c'
+                ? 'B2C subtotal'
+                : 'কার্ট subtotal',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'কার্ট subtotal',
-                style: TextStyle(fontWeight: FontWeight.w800),
+              Expanded(
+                child: Text(
+                  buyerMode == 'b2b'
+                      ? 'MOQ ও wholesale tier server-এ যাচাই হবে'
+                      : 'Delivery charge checkout-এ যোগ হবে',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(width: 12),
               Text(
-                'Delivery charge checkout-এ যোগ হবে',
-                style: TextStyle(fontSize: 12),
+                '৳${totalAmount.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: PaikariTheme.primaryColor,
+                ),
               ),
             ],
-          ),
-          Text(
-            '৳${totalAmount.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: PaikariTheme.primaryColor,
-            ),
           ),
         ],
       ),
