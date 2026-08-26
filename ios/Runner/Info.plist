@@ -31,8 +31,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -52,8 +50,11 @@
 				</array>
 			</dict>
 		</array>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>প্রোফাইল ও ব্যবসায়িক নথির ছবি বাছাই করতে আপনার photo library ব্যবহার করা হবে।</string>
+
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

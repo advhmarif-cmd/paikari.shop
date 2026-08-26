@@ -31,16 +31,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _pickTradeLicense() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() => _tradeLicenseFile = image);
-    }
+    if (!mounted || image == null) return;
+    setState(() => _tradeLicenseFile = image);
   }
 
   Future<void> _handleSignup() async {
     final user = sb.Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    if (_nameController.text.isEmpty) {
+    if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('অনুগ্রহ করে আপনার নাম দিন')),
       );
@@ -60,11 +59,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       String? tradeLicenseUrl;
       if (_tradeLicenseFile != null) {
         final bytes = await _tradeLicenseFile!.readAsBytes();
-        tradeLicenseUrl = await ref.read(storageRepositoryProvider).uploadFile(
-              path: 'trade_licenses',
-              id: user.id,
-              fileBytes: bytes,
-            );
+        tradeLicenseUrl = await ref
+            .read(storageRepositoryProvider)
+            .uploadFile(path: 'trade_licenses', id: user.id, fileBytes: bytes);
       }
 
       final userModel = UserModel(
@@ -107,7 +104,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          MediaQuery.viewInsetsOf(context).bottom + 24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -142,20 +145,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 32),
             TextField(
               controller: _nameController,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
               decoration: InputDecoration(
                 labelText: 'আপনার নাম (Your Name)',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             if (_selectedRole == UserRole.vendor) ...[
               const SizedBox(height: 16),
               TextField(
                 controller: _businessController,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.organizationName],
                 decoration: InputDecoration(
                   labelText: 'ব্যবসার নাম (Business Name)',
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -169,8 +178,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file,
-                          color: PaikariTheme.primaryColor),
+                      const Icon(
+                        Icons.upload_file,
+                        color: PaikariTheme.primaryColor,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -195,12 +206,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('অ্যাকাউন্ট তৈরি করুন',
-                      style: TextStyle(fontSize: 18)),
+                  : const Text(
+                      'অ্যাকাউন্ট তৈরি করুন',
+                      style: TextStyle(fontSize: 18),
+                    ),
             ),
           ],
         ),
@@ -234,8 +248,9 @@ class _RoleCard extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                isSelected ? PaikariTheme.primaryColor : Colors.grey.shade300,
+            color: isSelected
+                ? PaikariTheme.primaryColor
+                : Colors.grey.shade300,
             width: 2,
           ),
         ),

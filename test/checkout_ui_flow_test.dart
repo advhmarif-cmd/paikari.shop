@@ -34,8 +34,9 @@ Product _fixtureProduct() {
 Future<void> _pumpCheckout(
   WidgetTester tester, {
   required bool businessMode,
+  Size viewport = const Size(360, 800),
 }) async {
-  tester.view.physicalSize = const Size(360, 800);
+  tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
     tester.view.resetPhysicalSize();
@@ -123,5 +124,31 @@ void main() {
     await tester.pump();
     expect(find.text('অর্ডার সম্পন্ন করুন'), findsOneWidget);
     expect(find.text('প্রয়োজনীয়'), findsNWidgets(2));
+  });
+
+  testWidgets('B2C checkout fits an iPhone portrait viewport', (tester) async {
+    await _pumpCheckout(
+      tester,
+      businessMode: false,
+      viewport: const Size(375, 812),
+    );
+
+    expect(find.text('B2C subtotal'), findsOneWidget);
+    expect(find.text('অর্ডার সম্পন্ন করুন'), findsOneWidget);
+  });
+
+  testWidgets('B2B checkout fits an iPhone portrait viewport', (tester) async {
+    await _pumpCheckout(
+      tester,
+      businessMode: true,
+      viewport: const Size(375, 812),
+    );
+
+    expect(find.text('B2B wholesale subtotal'), findsOneWidget);
+    expect(
+      find.text('MOQ ও wholesale tier server-এ যাচাই হবে'),
+      findsOneWidget,
+    );
+    expect(find.text('অর্ডার সম্পন্ন করুন'), findsOneWidget);
   });
 }
