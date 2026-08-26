@@ -125,14 +125,33 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
     final status = vendor['verification_status'] as String? ?? 'pending';
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        title: Text(vendor['store_name'] as String? ?? 'Vendor store',
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${vendor['city'] as String? ?? 'বাংলাদেশ'} · $status'),
-        trailing: _statusMenu(
-            status,
-            const ['pending', 'verified', 'rejected', 'suspended'],
-            (next) => _updateVendor(vendor['user_id'] as String, next)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(vendor['store_name'] as String? ?? 'Vendor store',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                    child: Text(
+                        '${vendor['city'] as String? ?? 'বাংলাদেশ'} · $status',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 8),
+                _statusMenu(
+                    status,
+                    const ['pending', 'verified', 'rejected', 'suspended'],
+                    (next) =>
+                        _updateVendor(vendor['user_id'] as String, next)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -141,16 +160,31 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
     final status = product['approval_status'] as String? ?? 'pending';
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        title: Text(product['name'] as String? ?? 'Local product',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${product['sku'] as String? ?? 'No SKU'} · $status'),
-        trailing: _statusMenu(
-            status,
-            const ['pending', 'approved', 'rejected', 'suspended'],
-            (next) => _updateProduct(product['id'] as String, next)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(product['name'] as String? ?? 'Local product',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                    child: Text('${product['sku'] as String? ?? 'No SKU'} · $status',
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 8),
+                _statusMenu(
+                    status,
+                    const ['pending', 'approved', 'rejected', 'suspended'],
+                    (next) =>
+                        _updateProduct(product['id'] as String, next)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -190,14 +224,28 @@ class _AdminModerationScreenState extends ConsumerState<AdminModerationScreen> {
         statuses.contains(request.status) ? request.status : statuses.first;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        title: Text('${request.status} · ${request.reason}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('Order group: ${request.orderGroupId}'),
-        trailing: _statusMenu(
-            current, statuses, (next) => _updateReturn(request.id, next)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${request.status} · ${request.reason}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                    child: Text('Order group: ${request.orderGroupId}',
+                        maxLines: 1, overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 8),
+                _statusMenu(
+                    current, statuses, (next) => _updateReturn(request.id, next)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

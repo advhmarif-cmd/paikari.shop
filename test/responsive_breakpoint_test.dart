@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
+import 'package:paikari_shop/features/auth/screens/login_screen.dart';
+import 'package:paikari_shop/features/auth/screens/signup_screen.dart';
 import 'package:paikari_shop/features/chat/repositories/chat_repository.dart';
 import 'package:paikari_shop/features/notifications/repositories/notification_repository.dart';
 import 'package:paikari_shop/features/products/models/product.dart';
@@ -108,4 +110,60 @@ void main() {
       }
     },
   );
+
+  testWidgets('Login and signup remain keyboard-safe across narrow viewports', (
+    tester,
+  ) async {
+    final testClient = SupabaseClient(
+      'https://example.com',
+      'test-anon-key',
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
+    );
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      testClient.dispose();
+    });
+
+    for (final screen in [const LoginScreen(), const SignupScreen()]) {
+      for (final size in [
+        const Size(320, 568),
+        const Size(375, 812),
+        const Size(600, 960),
+      ]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authRepositoryProvider.overrideWithValue(
+                AuthRepository(client: testClient),
+              ),
+            ],
+            child: MaterialApp(
+              theme: PaikariTheme.lightTheme,
+              locale: const Locale('bn'),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en'), Locale('bn')],
+              home: MediaQuery(
+                data: MediaQueryData(
+                  size: size,
+                  viewInsets: const EdgeInsets.only(bottom: 300),
+                ),
+                child: screen,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(tester.takeException(), isNull, reason: 'viewport $size');
+      }
+    }
+  });
 }

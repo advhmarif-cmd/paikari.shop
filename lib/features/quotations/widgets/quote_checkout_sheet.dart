@@ -103,25 +103,38 @@ class _QuoteCheckoutSheetState extends ConsumerState<_QuoteCheckoutSheet> {
                       prefixIcon: Icon(Icons.home_outlined)),
                   validator: _required),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final fields = [
+                    TextFormField(
                       controller: _city,
                       decoration: const InputDecoration(labelText: 'District'),
                       validator: _required,
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextFormField(
+                    TextFormField(
                       controller: _state,
                       decoration:
                           const InputDecoration(labelText: 'Thana/Upazila'),
                       validator: _required,
                     ),
-                  ),
-                ],
+                  ];
+                  if (constraints.maxWidth < 520) {
+                    return Column(
+                      children: [
+                        fields[0],
+                        const SizedBox(height: 10),
+                        fields[1],
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: fields[0]),
+                      const SizedBox(width: 10),
+                      Expanded(child: fields[1]),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 10),
               TextFormField(

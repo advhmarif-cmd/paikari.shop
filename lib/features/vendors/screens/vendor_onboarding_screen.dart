@@ -154,7 +154,13 @@ class _VendorForm extends StatelessWidget {
     return Form(
       key: formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          18,
+          16,
+          MediaQuery.viewInsetsOf(context).bottom + 24,
+        ),
         children: [
           Container(
             padding: const EdgeInsets.all(16),
