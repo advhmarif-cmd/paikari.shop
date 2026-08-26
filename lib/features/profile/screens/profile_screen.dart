@@ -586,32 +586,40 @@ Future<void> _showOrderTracking(
                           Text('Tracking load করা যায়নি: ${snapshot.error}')));
             }
             final events = snapshot.data ?? const <OrderStatusEvent>[];
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                    'Order #${order.id.substring(order.id.length - 6)} tracking',
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 14),
-                if (events.isEmpty)
-                  const Text('এখনও status history তৈরি হয়নি।')
-                else
-                  ...events.map((event) => _OrderStatusEventTile(event: event)),
-                if (order.status == OrderStatus.delivered) ...[
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () =>
-                          _showReturnRequestDialog(context, ref, order),
-                      icon: const Icon(Icons.assignment_return_outlined),
-                      label: const Text('Return request'),
-                    ),
-                  ),
-                ],
-              ],
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Order #${order.id.substring(order.id.length - 6)} tracking',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 14),
+                    if (events.isEmpty)
+                      const Text('এখনও status history তৈরি হয়নি।')
+                    else
+                      ...events
+                          .map((event) => _OrderStatusEventTile(event: event)),
+                    if (order.status == OrderStatus.delivered) ...[
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _showReturnRequestDialog(context, ref, order),
+                          icon: const Icon(Icons.assignment_return_outlined),
+                          label: const Text('Return request'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             );
           },
         ),

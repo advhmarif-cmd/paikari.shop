@@ -224,30 +224,40 @@ Future<void> _respondToInquiry(
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: const Text('Inquiry-এর উত্তর দিন'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Quantity: ${inquiry.requestedQuantity}',
-                style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 12),
-            TextField(
-                controller: responseController,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'আপনার উত্তর')),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: selectedStatus,
-              decoration: const InputDecoration(labelText: 'Status'),
-              items: const [
-                DropdownMenuItem(value: 'responded', child: Text('Responded')),
-                DropdownMenuItem(value: 'accepted', child: Text('Accepted')),
-                DropdownMenuItem(value: 'closed', child: Text('Closed')),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Quantity: ${inquiry.requestedQuantity}',
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: responseController,
+                    maxLines: 4,
+                    decoration:
+                        const InputDecoration(labelText: 'আপনার উত্তর')),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedStatus,
+                  decoration: const InputDecoration(labelText: 'Status'),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'responded', child: Text('Responded')),
+                    DropdownMenuItem(
+                        value: 'accepted', child: Text('Accepted')),
+                    DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => selectedStatus = value);
+                  },
+                ),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => selectedStatus = value);
-              },
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -420,33 +430,40 @@ Future<void> _respondToReturn(
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         title: const Text('Return request response'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(request.reason,
-                style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              initialValue: status,
-              items: const [
-                DropdownMenuItem(
-                    value: 'approved', child: Text('Approve return')),
-                DropdownMenuItem(
-                    value: 'rejected', child: Text('Reject return')),
-                DropdownMenuItem(
-                    value: 'received', child: Text('Mark received')),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(request.reason,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: status,
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'approved', child: Text('Approve return')),
+                    DropdownMenuItem(
+                        value: 'rejected', child: Text('Reject return')),
+                    DropdownMenuItem(
+                        value: 'received', child: Text('Mark received')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => status = value);
+                  },
+                  decoration: const InputDecoration(labelText: 'Status'),
+                ),
+                TextField(
+                    controller: note,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                        labelText: 'Resolution note (optional)')),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => status = value);
-              },
-              decoration: const InputDecoration(labelText: 'Status'),
             ),
-            TextField(
-                controller: note,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                    labelText: 'Resolution note (optional)')),
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -926,41 +943,71 @@ class _VendorProductFormScreenState
                 keyboardType: TextInputType.number,
                 validator: _positiveNumber),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _Field(
-                        controller: _wholesaleMin,
-                        label: 'Wholesale min qty',
-                        icon: Icons.format_list_numbered,
-                        keyboardType: TextInputType.number)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _Field(
-                        controller: _wholesalePrice,
-                        label: 'Wholesale price',
-                        icon: Icons.price_change_outlined,
-                        keyboardType: TextInputType.number)),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final fields = [
+                  _Field(
+                      controller: _wholesaleMin,
+                      label: 'Wholesale min qty',
+                      icon: Icons.format_list_numbered,
+                      keyboardType: TextInputType.number),
+                  _Field(
+                      controller: _wholesalePrice,
+                      label: 'Wholesale price',
+                      icon: Icons.price_change_outlined,
+                      keyboardType: TextInputType.number),
+                ];
+                if (constraints.maxWidth < 520) {
+                  return Column(
+                    children: [
+                      fields[0],
+                      const SizedBox(height: 12),
+                      fields[1],
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: fields[0]),
+                    const SizedBox(width: 10),
+                    Expanded(child: fields[1]),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                    child: _Field(
-                        controller: _moq,
-                        label: 'MOQ',
-                        icon: Icons.inventory_2_outlined,
-                        keyboardType: TextInputType.number,
-                        validator: _positiveNumber)),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: _Field(
-                        controller: _unit,
-                        label: 'Unit label',
-                        icon: Icons.straighten_outlined,
-                        validator: _required)),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final fields = [
+                  _Field(
+                      controller: _moq,
+                      label: 'MOQ',
+                      icon: Icons.inventory_2_outlined,
+                      keyboardType: TextInputType.number,
+                      validator: _positiveNumber),
+                  _Field(
+                      controller: _unit,
+                      label: 'Unit label',
+                      icon: Icons.straighten_outlined,
+                      validator: _required),
+                ];
+                if (constraints.maxWidth < 520) {
+                  return Column(
+                    children: [
+                      fields[0],
+                      const SizedBox(height: 12),
+                      fields[1],
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: fields[0]),
+                    const SizedBox(width: 10),
+                    Expanded(child: fields[1]),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             _Field(

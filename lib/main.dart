@@ -242,7 +242,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const Icon(Icons.store, size: 30),
             ),
             const SizedBox(width: 10),
-            Text(l10n.appTitle),
+            Flexible(
+              child: Text(
+                l10n.appTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -434,19 +440,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: Row(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text(
                 'কেনাকাটার ধরন',
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
-              const Spacer(),
               ChoiceChip(
                 label: const Text('B2C'),
                 selected: !_businessMode,
                 onSelected: (_) => setState(() => _businessMode = false),
               ),
-              const SizedBox(width: 6),
               ChoiceChip(
                 label: const Text('B2B'),
                 selected: _businessMode,
@@ -509,13 +516,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.refresh(productListProvider(_businessMode).future),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 700 ? 4 : 2;
+                      final columns = catalogColumnsForWidth(
+                        constraints.maxWidth,
+                      );
                       return GridView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columns,
-                          mainAxisExtent: 320,
+                          mainAxisExtent: catalogTileExtentForWidth(
+                            constraints.maxWidth,
+                            columns,
+                          ),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -548,12 +560,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildLoadingGrid(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 700 ? 4 : 2;
+        final columns = catalogColumnsForWidth(constraints.maxWidth);
         return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            mainAxisExtent: 320,
+            mainAxisExtent: catalogTileExtentForWidth(
+              constraints.maxWidth,
+              columns,
+            ),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
@@ -563,6 +578,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
     );
   }
+}
+
+int catalogColumnsForWidth(double width) {
+  if (width >= 680) return 4;
+  if (width >= 520) return 3;
+  return 2;
+}
+
+double catalogTileExtentForWidth(double width, int columns) {
+  final usableWidth = width - 32 - ((columns - 1) * 12);
+  final tileWidth = usableWidth / columns;
+  return (tileWidth / 1.08) + 180;
 }
 
 class _SortChip extends StatelessWidget {
