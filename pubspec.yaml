@@ -10,7 +10,6 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  google_fonts: ^6.3.3
   intl: ^0.20.3
   flutter_riverpod: ^2.6.1
   riverpod: ^2.6.1
@@ -44,5 +43,9 @@ flutter:
   generate: true
   assets:
     - assets/logo.jpg
-    - assets/fonts/
-    
+    - assets/fonts/OFL.txt
+
+  fonts:
+    - family: Tiro Bangla
+      fonts:
+        - asset: assets/fonts/TiroBangla-Regular.ttf

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class PaikariTheme {
-  static const Color primaryColor = Color(0xFF4B39EF);
-  static const Color secondaryColor = Color(0xFFEE4492);
-  static const Color backgroundWhite = Color(0xFFFBFBFF);
-  static const Color inkColor = Color(0xFF17152A);
-  static const Color softBorder = Color(0xFFE7E6F0);
+  static const String fontFamily = 'Tiro Bangla';
+  static const Color primaryColor = Color(0xFF0B1F3A);
+  static const Color secondaryColor = Color(0xFFD4A72C);
+  static const Color backgroundWhite = Colors.white;
+  static const Color inkColor = Color(0xFF0B1F3A);
+  static const Color softBorder = Color(0xFFE4E7EC);
 
   static ThemeData get lightTheme {
-    final baseTextTheme = GoogleFonts.tiroBanglaTextTheme();
+    final baseTextTheme = ThemeData.light().textTheme.apply(
+      fontFamily: fontFamily,
+      bodyColor: inkColor,
+      displayColor: inkColor,
+    );
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
       primary: primaryColor,
@@ -21,57 +25,66 @@ class PaikariTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: backgroundWhite,
       visualDensity: VisualDensity.standard,
       textTheme: baseTextTheme.copyWith(
-        displaySmall: GoogleFonts.tiroBangla(
+        displaySmall: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 28,
           fontWeight: FontWeight.w900,
           color: inkColor,
         ),
-        headlineSmall: GoogleFonts.tiroBangla(
+        headlineSmall: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 23,
           fontWeight: FontWeight.w900,
           color: inkColor,
         ),
-        titleLarge: GoogleFonts.tiroBangla(
+        titleLarge: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 20,
           fontWeight: FontWeight.w900,
           color: inkColor,
         ),
-        titleMedium: GoogleFonts.tiroBangla(
+        titleMedium: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w800,
           color: inkColor,
         ),
-        bodyLarge: GoogleFonts.tiroBangla(
+        bodyLarge: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 16,
           height: 1.45,
           color: inkColor,
         ),
-        bodyMedium: GoogleFonts.tiroBangla(
+        bodyMedium: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 14,
           height: 1.45,
           color: inkColor,
         ),
-        labelLarge: GoogleFonts.tiroBangla(
+        labelLarge: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 14,
           fontWeight: FontWeight.w800,
         ),
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.tiroBangla(
+        titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 20,
           fontWeight: FontWeight.w900,
           color: Colors.white,
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.white),
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -121,7 +134,8 @@ class PaikariTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.tiroBangla(
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w900,
           ),
@@ -136,7 +150,8 @@ class PaikariTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.tiroBangla(
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w900,
           ),
@@ -150,7 +165,8 @@ class PaikariTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.tiroBangla(
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w900,
           ),
@@ -163,7 +179,8 @@ class PaikariTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.tiroBangla(
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w800,
           ),
@@ -175,12 +192,14 @@ class PaikariTheme {
         disabledColor: colorScheme.surfaceContainerHighest,
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        labelStyle: GoogleFonts.tiroBangla(
+        labelStyle: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w800,
           color: inkColor,
         ),
-        secondaryLabelStyle: GoogleFonts.tiroBangla(
+        secondaryLabelStyle: const TextStyle(
+          fontFamily: fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w800,
           color: primaryColor,
@@ -203,7 +222,8 @@ class PaikariTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: inkColor,
-        contentTextStyle: GoogleFonts.tiroBangla(
+        contentTextStyle: const TextStyle(
+          fontFamily: fontFamily,
           color: Colors.white,
           fontWeight: FontWeight.w700,
         ),
