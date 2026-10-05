@@ -44,6 +44,13 @@ Future<void> main() async {
     ),
   );
 
+  final initialization = _initializeServices();
+  runApp(
+    ProviderScope(child: PaikariApp(initialization: initialization)),
+  );
+}
+
+Future<void> _initializeServices() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.anonKey,
@@ -54,11 +61,12 @@ Future<void> main() async {
 
   // Firebase remains only for legacy storage/trade-license uploads; auth and orders use Supabase.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ProviderScope(child: PaikariApp()));
 }
 
 class PaikariApp extends StatelessWidget {
-  const PaikariApp({super.key});
+  const PaikariApp({super.key, this.initialization});
+
+  final Future<void>? initialization;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +82,20 @@ class PaikariApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('en'), Locale('bn')],
       locale: const Locale('bn'),
-      home: const AuthWrapper(),
+      home: initialization == null
+          ? const AuthWrapper()
+          : FutureBuilder<void>(
+              future: initialization,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const PaikariSplashScreen();
+                }
+                if (snapshot.hasError) {
+                  return const _StartupError();
+                }
+                return const AuthWrapper();
+              },
+            ),
       onGenerateRoute: (settings) {
         final name = settings.name ?? '';
         if (name.startsWith('/p/')) {
@@ -109,6 +130,117 @@ class PaikariApp extends StatelessWidget {
         '/buyer/business': (context) => const BusinessBuyerScreen(),
         '/admin/moderation': (context) => const AdminModerationScreen(),
       },
+    );
+  }
+}
+
+class PaikariSplashScreen extends StatelessWidget {
+  const PaikariSplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: PaikariTheme.primaryColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 156,
+              height: 156,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 24,
+                    offset: Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Image.asset(
+                  'assets/logo.jpg',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.storefront_rounded,
+                    size: 76,
+                    color: PaikariTheme.primaryColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Paikari.shop',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'বাংলাদেশের স্মার্ট মার্কেটপ্লেস',
+              style: TextStyle(
+                color: Color(0xFFD4A72C),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 32),
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StartupError extends StatelessWidget {
+  const _StartupError();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 52),
+              const SizedBox(height: 12),
+              const Text(
+                'অ্যাপ চালু করা যায়নি',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'ইন্টারনেট সংযোগ যাচাই করে আবার চেষ্টা করুন।',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => main(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('আবার চেষ্টা করুন'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
