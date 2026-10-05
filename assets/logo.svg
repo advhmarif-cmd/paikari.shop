@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Paikari.shop marketplace logo</title>
+  <desc id="desc">A Deep Blue shopping basket with a Golden P mark inside a circular Golden ring.</desc>
+  <circle cx="512" cy="512" r="470" fill="#0B1F3A"/>
+  <circle cx="512" cy="512" r="430" fill="none" stroke="#D4A72C" stroke-width="24"/>
+  <path d="M300 410h424l-42 300c-6 43-43 74-86 74H428c-43 0-80-31-86-74z" fill="#D4A72C"/>
+  <path d="M394 418c0-91 53-153 118-153s118 62 118 153" fill="none" stroke="#D4A72C" stroke-width="34" stroke-linecap="round"/>
+  <path d="M465 658V477h70c75 0 75 110 0 110h-70" fill="none" stroke="#0B1F3A" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M354 735h316" stroke="#0B1F3A" stroke-width="24" stroke-linecap="round"/>
+</svg>

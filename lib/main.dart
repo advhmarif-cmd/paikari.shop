@@ -163,7 +163,7 @@ class PaikariSplashScreen extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
                 child: Image.asset(
-                  'assets/logo.jpg',
+                  'assets/logo.png',
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => const Icon(
                     Icons.storefront_rounded,
@@ -368,7 +368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Row(
           children: [
             Image.asset(
-              'assets/logo.jpg',
+              'assets/logo.png',
               height: 40,
               errorBuilder: (context, error, stackTrace) =>
                   const Icon(Icons.store, size: 30),
