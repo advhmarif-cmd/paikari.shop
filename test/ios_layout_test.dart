@@ -29,9 +29,9 @@ void main() {
   testWidgets('signup consumer layout fits an iPhone viewport', (tester) async {
     await _pumpSignup(tester);
 
-    expect(find.text('আপনার ভূমিকা নির্বাচন করুন'), findsOneWidget);
-    expect(find.text('ক্রেতা (Consumer)'), findsOneWidget);
-    expect(find.text('বিক্রেতা (Vendor)'), findsOneWidget);
+    expect(find.text('Account type'), findsOneWidget);
+    expect(find.text('ক্রেতা'), findsOneWidget);
+    expect(find.text('বিক্রেতা'), findsOneWidget);
     expect(find.text('অ্যাকাউন্ট তৈরি করুন'), findsOneWidget);
   });
 
@@ -40,9 +40,9 @@ void main() {
   ) async {
     await _pumpSignup(tester);
 
-    await tester.tap(find.text('বিক্রেতা (Vendor)'));
+    await tester.tap(find.text('বিক্রেতা'));
     await tester.pump();
-    expect(find.text('ব্যবসার নাম (Business Name)'), findsOneWidget);
+    expect(find.text('ব্যবসার নাম (Business name)'), findsOneWidget);
     expect(find.textContaining('ট্রেড লাইসেন্স আপলোড করুন'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
