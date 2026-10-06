@@ -17,6 +17,28 @@ class AuthRepository {
   Stream<sb.User?> get authStateChanges =>
       _auth.onAuthStateChange.map((state) => state.session?.user);
 
+  Future<sb.AuthResponse> signInWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithPassword(
+      email: email.trim().toLowerCase(),
+      password: password,
+    );
+  }
+
+  Future<sb.AuthResponse> signUpWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  }) {
+    return _auth.signUp(
+      email: email.trim().toLowerCase(),
+      password: password,
+      data: {'full_name': displayName.trim()},
+    );
+  }
+
   Future<void> sendPhoneOtp({required String phoneNumber}) async {
     await _auth.signInWithOtp(phone: phoneNumber);
   }

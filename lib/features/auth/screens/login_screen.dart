@@ -1,9 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:paikari_shop/core/theme/paikari_theme.dart';
 import 'package:paikari_shop/features/auth/repositories/auth_repository.dart';
-import 'package:paikari_shop/l10n/generated/app_localizations.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -13,88 +12,33 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phoneController = TextEditingController();
-  final _otpController = TextEditingController();
-
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _otpSent = false;
-  String? _phoneNumber;
-
-  String _normalizePhoneNumber(String input) {
-    const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    String normalized = input;
-    for (int i = 0; i < 10; i++) {
-      normalized = normalized.replaceAll(banglaDigits[i], englishDigits[i]);
-    }
-    normalized = normalized.replaceAll(RegExp(r'\D'), '');
-    if (normalized.startsWith('880')) return '+$normalized';
-    if (normalized.startsWith('0')) return '+88${normalized.substring(1)}';
-    return '+88$normalized';
-  }
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _phoneController.dispose();
-    _otpController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendOtp() async {
-    final rawPhone = _phoneController.text.trim();
-    if (rawPhone.isEmpty) return;
-
-    final phoneNumber = _normalizePhoneNumber(rawPhone);
-    final digits = phoneNumber.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 12) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('সঠিক মোবাইল নম্বর দিন')));
-      return;
-    }
-
+  Future<void> _login() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .sendPhoneOtp(phoneNumber: phoneNumber);
-      if (mounted) {
-        setState(() {
-          _phoneNumber = phoneNumber;
-          _otpSent = true;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('OTP পাঠানো যায়নি: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _verifyOtp() async {
-    if (_otpController.text.trim().isEmpty || _phoneNumber == null) return;
-    setState(() => _isLoading = true);
-    try {
-      final response = await ref
-          .read(authRepositoryProvider)
-          .verifyPhoneOtp(
-            phoneNumber: _phoneNumber!,
-            token: _otpController.text.trim(),
+      final response = await ref.read(authRepositoryProvider).signInWithEmail(
+            email: _emailController.text,
+            password: _passwordController.text,
           );
-      final user = response.user;
-      if (user != null) {
-        await ref.read(authRepositoryProvider).ensureUserProfileExists(user);
+      if (response.user == null || response.session == null) {
+        throw const sb.AuthException('Email confirmation is required before login.');
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('ভুল OTP: $e')));
-      }
+      await ref.read(authRepositoryProvider).ensureUserProfileExists(response.user!);
+    } catch (error) {
+      if (mounted) _showError(_friendlyAuthError(error));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -103,28 +47,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleSocialLogin(sb.OAuthProvider provider) async {
     setState(() => _isLoading = true);
     try {
-      final started = await ref
-          .read(authRepositoryProvider)
-          .signInWithOAuth(provider);
-      if (!started && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('লগইন শুরু করা যায়নি')));
-      }
-    } catch (e) {
+      await ref.read(authRepositoryProvider).signInWithOAuth(provider);
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('লগইন ব্যর্থ হয়েছে: $e')));
+        _showError('এই OAuth provider এখনো Supabase-এ সঠিকভাবে কনফিগার করা হয়নি।');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  String _friendlyAuthError(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('invalid login credentials')) {
+      return 'ইমেইল বা পাসওয়ার্ড সঠিক নয়।';
+    }
+    if (message.contains('email not confirmed')) {
+      return 'আগে আপনার ইমেইল confirm করুন, তারপর login করুন।';
+    }
+    if (message.contains('network')) return 'ইন্টারনেট সংযোগ যাচাই করুন।';
+    return 'লগইন করা যায়নি। তথ্যগুলো যাচাই করে আবার চেষ্টা করুন।';
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -139,236 +89,92 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 20),
-                Center(
-                  child: Image.asset(
-                    'assets/logo.png',
-                    height: 120,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.store, size: 80, color: Colors.white),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+                  Center(child: Image.asset('assets/logo.png', height: 120)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Paikari.shop',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  l10n.appTitle,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        if (!_otpSent) ...[
-                          TextField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
+                  const SizedBox(height: 30),
+                  Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.username, AutofillHints.email],
+                            decoration: const InputDecoration(
+                              labelText: 'ইমেইল (Email)',
+                              prefixIcon: Icon(Icons.email_outlined),
+                            ),
+                            validator: (value) {
+                              final email = value?.trim() ?? '';
+                              if (email.isEmpty || !email.contains('@')) return 'সঠিক ইমেইল দিন';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
                             textInputAction: TextInputAction.done,
-                            autofillHints: const [
-                              AutofillHints.telephoneNumber,
+                            autofillHints: const [AutofillHints.password],
+                            onFieldSubmitted: (_) => _login(),
+                            decoration: InputDecoration(
+                              labelText: 'পাসওয়ার্ড (Password)',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                              ),
+                            ),
+                            validator: (value) => (value?.length ?? 0) < 6 ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের দিন' : null,
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _login,
+                              child: _isLoading
+                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  : const Text('লগইন করুন (Login)', style: TextStyle(fontSize: 16)),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Google/Facebook login provider কনফিগার হলে চালু করা যাবে।', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            children: [
+                              TextButton.icon(onPressed: _isLoading ? null : () => _handleSocialLogin(sb.OAuthProvider.google), icon: const Icon(Icons.g_mobiledata), label: const Text('Google')),
+                              TextButton.icon(onPressed: _isLoading ? null : () => _handleSocialLogin(sb.OAuthProvider.facebook), icon: const Icon(Icons.facebook), label: const Text('Facebook')),
                             ],
-                            onSubmitted: (_) => _sendOtp(),
-                            decoration: InputDecoration(
-                              labelText: 'মোবাইল নম্বর (Phone Number)',
-                              prefixText: '+৮৮ ',
-                              prefixIcon: const Icon(Icons.phone_android),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: _isLoading ? null : _sendOtp,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : const Text(
-                                    'OTP পাঠান (Send OTP)',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                          ),
-                        ] else ...[
-                          TextField(
-                            controller: _otpController,
-                            keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.oneTimeCode],
-                            maxLength: 6,
-                            onSubmitted: (_) => _verifyOtp(),
-                            decoration: InputDecoration(
-                              labelText: '৬ সংখ্যার কোড (OTP)',
-                              prefixIcon: const Icon(Icons.lock_clock),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: _isLoading ? null : _verifyOtp,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : const Text(
-                                    'যাচাই করুন (Verify)',
-                                    style: TextStyle(fontSize: 18),
-                                  ),
-                          ),
-                          TextButton(
-                            onPressed: () => setState(() {
-                              _otpSent = false;
-                              _phoneNumber = null;
-                            }),
-                            child: const Text('নম্বর পরিবর্তন করুন'),
                           ),
                         ],
-                        const SizedBox(height: 16),
-                        const Row(
-                          children: [
-                            Expanded(child: Divider()),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text('অথবা (OR)'),
-                            ),
-                            Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final buttonWidth = constraints.maxWidth < 360
-                                ? constraints.maxWidth
-                                : (constraints.maxWidth - 10) / 2;
-                            return Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              alignment: WrapAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: buttonWidth,
-                                  child: _SocialButton(
-                                    label: 'Google',
-                                    color: Colors.red.shade600,
-                                    icon: Icons.g_mobiledata,
-                                    onPressed: _isLoading
-                                        ? null
-                                        : () => _handleSocialLogin(
-                                            sb.OAuthProvider.google,
-                                          ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: buttonWidth,
-                                  child: _SocialButton(
-                                    label: 'Facebook',
-                                    color: Colors.blue.shade800,
-                                    icon: Icons.facebook,
-                                    onPressed: _isLoading
-                                        ? null
-                                        : () => _handleSocialLogin(
-                                            sb.OAuthProvider.facebook,
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 22),
-                TextButton.icon(
-                  onPressed: _isLoading
-                      ? null
-                      : () => Navigator.pushNamed(context, '/signup'),
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  label: const Text('অ্যাকাউন্ট নেই? নিবন্ধন করুন'),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
-  final VoidCallback? onPressed;
-
-  const _SocialButton({
-    required this.label,
-    required this.color,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: color.withValues(alpha: 0.8),
+                  const SizedBox(height: 22),
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : () => Navigator.pushNamed(context, '/signup'),
+                    icon: const Icon(Icons.person_add_alt_1_outlined),
+                    label: const Text('অ্যাকাউন্ট নেই? নিবন্ধন করুন'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
